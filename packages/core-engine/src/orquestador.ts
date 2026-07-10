@@ -156,10 +156,20 @@ export function calcularMuro(
     `Aislante: ${areaNeta.toFixed(2)} m2 (una vez, no por cara) / ${catalogo.aislante.presentacion_m2_por_paquete} m2 por paquete = ${aislante.paquetes} paquete`
   );
 
+  // Calcular peso total de placas
+  const placaConfig = catalogo.placas.find((p) => p.tipo === muro.placa.tipo);
+  const pesoKgM2 = placaConfig ? placaConfig.peso_kg_m2 : 9.5;
+  const areaPlacasM2 = todasLasPlacas.reduce((acc, p) => acc + p.ancho * p.alto, 0);
+  const pesoTotalKg = roundFloat(areaPlacasM2 * pesoKgM2);
+  trazabilidad.push(
+    `Placas peso: ${areaPlacasM2.toFixed(2)} m2 x ${pesoKgM2} kg/m2 = ${pesoTotalKg.toFixed(2)} kg`
+  );
+
   return {
     muro_id: muro.id,
     placas: {
       cantidad_total: todasLasPlacas.length,
+      peso_total_kg: pesoTotalKg,
       detalle: todasLasPlacas,
     },
     perfiles,

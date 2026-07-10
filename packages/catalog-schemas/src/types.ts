@@ -144,7 +144,7 @@ export interface ResultadoCintaMasilla {
 
 export interface ResultadoMuro {
   muro_id: string;
-  placas: { cantidad_total: number; detalle: PlacaRect[] };
+  placas: { cantidad_total: number; peso_total_kg: number; detalle: PlacaRect[] };
   perfiles: ResultadoPerfiles;
   tornillos: ResultadoTornillos;
   cinta: { ml_total: number; rollos: number };
@@ -158,7 +158,7 @@ export interface ResultadoProyecto {
   proyecto: string;
   muros: ResultadoMuro[];
   totales: {
-    placas: { cantidad_total: number };
+    placas: { cantidad_total: number; peso_total_kg: number };
     perfiles: ResultadoPerfiles;
     tornillos: ResultadoTornillos;
     cinta: { ml_total: number; rollos: number };

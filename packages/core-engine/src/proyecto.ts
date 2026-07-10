@@ -69,8 +69,11 @@ export function calcularProyecto(
   let aislanteM2Total = 0;
   let esquinerosMlTotal = 0;
 
+  let placasPesoTotal = 0;
+
   for (const resMuro of murosResultados) {
     placasTotal += resMuro.placas.cantidad_total;
+    placasPesoTotal += resMuro.placas.peso_total_kg;
     montantesTotal += resMuro.perfiles.montantes;
     rielesBarrasTotal += resMuro.perfiles.rieles_barras;
     montantesRefuerzoVanosTotal += resMuro.perfiles.montantes_refuerzo_vanos;
@@ -94,6 +97,7 @@ export function calcularProyecto(
   const totales = {
     placas: {
       cantidad_total: placasTotal,
+      peso_total_kg: roundFloat(placasPesoTotal),
     },
     perfiles: {
       montantes: montantesTotal,

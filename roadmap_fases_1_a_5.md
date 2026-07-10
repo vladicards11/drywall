@@ -98,9 +98,9 @@
 - [x] **12.3** Documentar y agregar **Caso G: estructura doble** a `casos-de-oro-referencia.md` con test de regresión en verde
 
 ### Épica 13 — Casuística: zonas húmedas (placa RH) y resistencia al fuego (placa RF)
-- [ ] **13.1** Agregar entradas `RH` y `RF` al catálogo genérico (`generico_estandar.json`) con su `espesor_mm` y `peso_kg_m2` propios — el catálogo valida sin errores
-- [ ] **13.2** Test explícito con placa RF (15mm): verificar que `calcularTornilleria` usa la densidad de tornillos del espesor real (`placa_perfil_por_m2["15mm"]`), distinta a la de 12.5mm
-- [ ] **13.3** Agregar `placas.peso_total_kg` al `ResultadoMuro` (área instalada × `peso_kg_m2` de la placa seleccionada) — dato relevante para flete y carga estructural
+- [x] **13.1** Agregar entradas `RH` y `RF` al catálogo genérico (`generico_estandar.json`) con su `espesor_mm` y `peso_kg_m2` propios — el catálogo valida sin errores
+- [x] **13.2** Test explícito con placa RF (15mm): verificar que `calcularTornilleria` usa la densidad de tornillos del espesor real (`placa_perfil_por_m2["15mm"]`), distinta a la de 12.5mm
+- [x] **13.3** Agregar `placas.peso_total_kg` al `ResultadoMuro` (área instalada × `peso_kg_m2` de la placa seleccionada) — dato relevante para flete y carga estructural
 
 ### Épica 14 — Casuística: muros altos con empalme de montante
 - [ ] **14.1** En `calcularPerfiles`: si `alto_m` supera `largo_barra_m` del perfil de montante, calcular el empalme (montante adicional de refuerzo). Test: muro de 3.20m con barra de 3.00m requiere empalme; muro de 2.80m no.

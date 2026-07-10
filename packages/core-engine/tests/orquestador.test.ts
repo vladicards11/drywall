@@ -262,4 +262,53 @@ describe("Orquestador - Pruebas de integración de Casos de Oro", () => {
     expect(resDoble.placas.cantidad_total).toBe(resSimple.placas.cantidad_total);
     expect(resDoble.aislante.m2).toBeCloseTo(resSimple.aislante.m2, 2);
   });
+
+  it("13.2-13.3 - Placas especiales (RH/RF), densidad variable de tornillos y peso estructural", () => {
+    const muroST = {
+      id: "muro_ST",
+      geometria: { largo_m: 4.00, alto_m: 2.40 },
+      sistema: { estructura: "simple" as const, caras: 2 as const, capas_por_cara: 1, perfil: "M48", riel: "R48", separacion_montante_m: 0.40 },
+      placa: { tipo: "ST", espesor_mm: 12.5, formato_m: [1.20, 2.40] as [number, number], orientacion: "vertical" as const },
+      aberturas: [],
+      encuentros: []
+    };
+
+    const muroRF = {
+      ...muroST,
+      id: "muro_RF",
+      placa: { tipo: "RF", espesor_mm: 15.0, formato_m: [1.20, 2.40] as [number, number], orientacion: "vertical" as const }
+    };
+
+    const resST = calcularMuro(muroST, [], catalogo);
+    const resRF = calcularMuro(muroRF, [], catalogo);
+
+    // 1. Tornillería variable por espesor:
+    // Placa ST (12.5mm) usa densidad de 25 tornillos/m2
+    // Area neta = 9.60m2 * 2 caras * 1 capa * 25 = 480 tornillos
+    expect(resST.tornillos.placa_perfil).toBe(480);
+
+    // Placa RF (15mm) usa densidad de 28 tornillos/m2
+    // Area neta = 9.60m2 * 2 caras * 1 capa * 28 = 538 tornillos (roundUpSafe)
+    expect(resRF.tornillos.placa_perfil).toBe(538);
+
+    // 2. Peso estructural de placas:
+    // ST: area instalada (sum of p.ancho * p.alto) = 19.20m2
+    // 19.20m2 * 9.5 kg/m2 = 182.40 kg
+    expect(resST.placas.peso_total_kg).toBeCloseTo(182.40, 2);
+
+    // RF: area instalada = 19.20m2
+    // 19.20m2 * 11.6 kg/m2 = 222.72 kg
+    expect(resRF.placas.peso_total_kg).toBeCloseTo(222.72, 2);
+
+    // 3. Consolidación de peso a nivel proyecto
+    const proyecto = {
+      proyecto: "Proyecto Especial",
+      catalogo: "generico_estandar",
+      elementos: [muroST, muroRF],
+      uniones: []
+    };
+
+    const resProyecto = calcularProyecto(proyecto, catalogo);
+    expect(resProyecto.totales.placas.peso_total_kg).toBeCloseTo(182.40 + 222.72, 1);
+  });
 });
