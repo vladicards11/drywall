@@ -35,6 +35,11 @@ const App: React.FC = () => {
         resultado={resultado}
         state={state}
         errorMsg={errorMsg}
+        largo_m={parseFloat(form.largo_m)}
+        alto_m={parseFloat(form.alto_m)}
+        aberturas={form.aberturas}
+        carasConfig={form.caras}
+        capasConfig={form.capas_por_cara}
       />
     </div>
   );

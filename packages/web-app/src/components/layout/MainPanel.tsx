@@ -1,12 +1,18 @@
 import React from 'react';
 import styles from './MainPanel.module.css';
-import type { ResultadoMuro } from '@drywall-calc/catalog-schemas';
+import { MuroVisualizer } from '../visualizer/MuroVisualizer';
+import type { ResultadoMuro, Abertura } from '@drywall-calc/catalog-schemas';
 import type { CalculationState } from '../../hooks/useCalculadora';
 
 interface MainPanelProps {
   resultado: ResultadoMuro | null;
   state: CalculationState;
   errorMsg: string;
+  largo_m: number;
+  alto_m: number;
+  aberturas: Abertura[];
+  carasConfig: 1 | 2;
+  capasConfig: number;
 }
 
 const MATERIAL_ROWS = [
@@ -21,7 +27,16 @@ const MATERIAL_ROWS = [
   { key: 'aislante', label: 'Aislante', icon: '🧶', getValue: (r: ResultadoMuro) => `${r.aislante.paquetes} paquete${r.aislante.paquetes !== 1 ? 's' : ''}`, getSub: (r: ResultadoMuro) => `${r.aislante.m2.toFixed(1)} m²` },
 ];
 
-export const MainPanel: React.FC<MainPanelProps> = ({ resultado, state, errorMsg }) => {
+export const MainPanel: React.FC<MainPanelProps> = ({
+  resultado,
+  state,
+  errorMsg,
+  largo_m,
+  alto_m,
+  aberturas,
+  carasConfig,
+  capasConfig,
+}) => {
   return (
     <main className={styles.main}>
       {/* ---- Empty state ---- */}
@@ -71,6 +86,16 @@ export const MainPanel: React.FC<MainPanelProps> = ({ resultado, state, errorMsg
       {/* ---- Results ---- */}
       {state === 'done' && resultado && (
         <div className={`${styles.results} animate-fade-in`}>
+          {/* Visualizador 2D SVG */}
+          <MuroVisualizer
+            resultado={resultado}
+            largo_m={largo_m}
+            alto_m={alto_m}
+            aberturas={aberturas}
+            carasConfig={carasConfig}
+            capasConfig={capasConfig}
+          />
+
           <div className={styles.resultsHeader}>
             <h2 className={styles.resultsTitle}>Resultado del cómputo</h2>
             <span className={styles.successBadge}>✓ Calculado</span>
