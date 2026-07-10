@@ -13,6 +13,7 @@ interface SidebarProps {
   proyecto: ProyectoFormData;
   historial: HistorialItem[];
   onUpdateNombre: (nombre: string) => void;
+  onUpdateCatalogoSistema: (sistema: string) => void;
   onGuardarEnHistorial: () => void;
   onCargarDesdeHistorial: (id: string) => void;
   onEliminarDeHistorial: (id: string) => void;
@@ -60,6 +61,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
           proyecto={props.proyecto}
           historial={props.historial}
           onUpdateNombre={props.onUpdateNombre}
+          onUpdateCatalogoSistema={props.onUpdateCatalogoSistema}
           onGuardarEnHistorial={props.onGuardarEnHistorial}
           onCargarDesdeHistorial={props.onCargarDesdeHistorial}
           onEliminarDeHistorial={props.onEliminarDeHistorial}

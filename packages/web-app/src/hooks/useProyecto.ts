@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { calcularProyecto } from '@drywall-calc/core-engine';
-import { obtenerCatalogoGenericoEstandar } from '@drywall-calc/catalog-schemas';
+import { obtenerCatalogo, obtenerCatalogoGenericoEstandar } from '@drywall-calc/catalog-schemas';
 import type { Muro, Union, ResultadoProyecto, ResultadoMuro, Abertura } from '@drywall-calc/catalog-schemas';
 import type { MuroFormData, FormErrors } from './useCalculadora';
 import { DEFAULT_FORM, validateForm } from './useCalculadora';
@@ -17,6 +17,7 @@ export interface UnionFormData {
 // ---- Project-level form data ----
 export interface ProyectoFormData {
   nombre: string;
+  catalogo_sistema: string; // 'generico_estandar' | 'gyplac_superboard' | 'tupemesa_precor'
   muros: MuroFormData[];
   uniones: UnionFormData[];
   factor_desperdicio_pct: number; // 0–30, default from catalogo
@@ -24,13 +25,14 @@ export interface ProyectoFormData {
 
 export type ProyectoCalculationState = 'idle' | 'calculating' | 'done' | 'error';
 
-const catalogo = obtenerCatalogoGenericoEstandar();
+const catalogoDefault = obtenerCatalogoGenericoEstandar();
 
 const DEFAULT_PROYECTO: ProyectoFormData = {
   nombre: 'Proyecto sin nombre',
+  catalogo_sistema: 'generico_estandar',
   muros: [{ ...DEFAULT_FORM }],
   uniones: [],
-  factor_desperdicio_pct: Math.round(catalogo.factor_desperdicio_placas_default * 100),
+  factor_desperdicio_pct: Math.round(catalogoDefault.factor_desperdicio_placas_default * 100),
 };
 
 function parseFormato(fmt: string): [number, number] {
@@ -100,11 +102,16 @@ function deserializeProyecto(search: string): ProyectoFormData | null {
 const getInitialProyecto = (): ProyectoFormData => {
   if (typeof window !== 'undefined') {
     const decoded = deserializeProyecto(window.location.search);
-    if (decoded) return decoded;
+    if (decoded) {
+      if (!decoded.catalogo_sistema) decoded.catalogo_sistema = 'generico_estandar';
+      return decoded;
+    }
     const local = window.localStorage.getItem('drywall_active_proyecto');
     if (local) {
       try {
-        return JSON.parse(local) as ProyectoFormData;
+        const parsed = JSON.parse(local) as ProyectoFormData;
+        if (!parsed.catalogo_sistema) parsed.catalogo_sistema = 'generico_estandar';
+        return parsed;
       } catch {
         // ignore
       }
@@ -120,9 +127,16 @@ export interface HistorialItem {
   datos: ProyectoFormData;
 }
 
-// ---- Hook principal ----
 export function useProyecto() {
   const [proyecto, setProyecto] = useState<ProyectoFormData>(getInitialProyecto);
+
+  // Resolvido dinámicamente según el catálogo seleccionado
+  let catalogo;
+  try {
+    catalogo = obtenerCatalogo(proyecto.catalogo_sistema);
+  } catch {
+    catalogo = catalogoDefault;
+  }
   const [historial, setHistorial] = useState<HistorialItem[]>(() => {
     if (typeof window !== 'undefined') {
       const saved = window.localStorage.getItem('drywall_historial_proyectos');
@@ -249,6 +263,52 @@ export function useProyecto() {
     setProyecto((prev) => ({ ...prev, nombre }));
   }, []);
 
+  // ---- Cambio de Catálogo de Referencia ----
+  const updateCatalogoSistema = useCallback((sistema: string) => {
+    setProyecto((prev) => {
+      // Resolve the new catalog
+      let newCatalogo;
+      try {
+        newCatalogo = obtenerCatalogo(sistema);
+      } catch {
+        newCatalogo = catalogoDefault;
+      }
+
+      // Safe transition: reset any selected items in walls if they don't exist in the new catalog
+      const newMuros = prev.muros.map((m) => {
+        const hasPerfil = newCatalogo.perfiles.montante.some((p) => p.codigo === m.perfil);
+        const hasRiel = newCatalogo.perfiles.riel.some((r) => r.codigo === m.riel);
+        const hasPlacaTipo = newCatalogo.placas.some((p) => p.tipo === m.placa_tipo);
+
+        return {
+          ...m,
+          perfil: hasPerfil ? m.perfil : newCatalogo.perfiles.montante[0]?.codigo || '',
+          riel: hasRiel ? m.riel : newCatalogo.perfiles.riel[0]?.codigo || '',
+          placa_tipo: hasPlacaTipo ? m.placa_tipo : newCatalogo.placas[0]?.tipo || '',
+          placa_espesor_mm: hasPlacaTipo ? m.placa_espesor_mm : newCatalogo.placas[0]?.espesor_mm || 12.5,
+          placa_formato: hasPlacaTipo ? m.placa_formato : `${newCatalogo.placas[0]?.formatos_m[0][0]}x${newCatalogo.placas[0]?.formatos_m[0][1]}` || '1.20x2.40',
+        };
+      });
+
+      // Clear/validate uniones if they are not compatible (they are generally compatible standard types, but just in case)
+      const allowedUnions = new Set(newCatalogo.tipologias_union.map((t) => t.codigo));
+      const newUniones = prev.uniones.filter((u) => allowedUnions.has(u.tipo_union));
+
+      // Reset waste factor to the default of the new catalog
+      const newWasteFactor = Math.round(newCatalogo.factor_desperdicio_placas_default * 100);
+
+      return {
+        ...prev,
+        catalogo_sistema: sistema,
+        muros: newMuros,
+        uniones: newUniones,
+        factor_desperdicio_pct: newWasteFactor,
+      };
+    });
+    setState('idle');
+    setResultado(null);
+  }, []);
+
   // ---- Factor de desperdicio ----
   const updateFactorDesperdicio = useCallback((pct: number) => {
     setProyecto((prev) => ({ ...prev, factor_desperdicio_pct: pct }));
@@ -287,7 +347,7 @@ export function useProyecto() {
       // Build the Proyecto domain object
       const proyectoDomain = {
         proyecto: proyecto.nombre,
-        catalogo: 'generico_estandar',
+        catalogo: proyecto.catalogo_sistema,
         elementos: murosDomain,
         uniones: unionesDomain,
       };
@@ -424,6 +484,7 @@ export function useProyecto() {
     addUnion,
     removeUnion,
     updateNombre,
+    updateCatalogoSistema,
     updateFactorDesperdicio,
     calcular,
     compartir,

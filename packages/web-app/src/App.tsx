@@ -25,6 +25,7 @@ const App: React.FC = () => {
     addUnion,
     removeUnion,
     updateNombre,
+    updateCatalogoSistema,
     updateFactorDesperdicio,
     calcular,
     compartir,
@@ -43,6 +44,7 @@ const App: React.FC = () => {
         proyecto={proyecto}
         historial={historial}
         onUpdateNombre={updateNombre}
+        onUpdateCatalogoSistema={updateCatalogoSistema}
         onGuardarEnHistorial={guardarEnHistorial}
         onCargarDesdeHistorial={cargarDesdeHistorial}
         onEliminarDeHistorial={eliminarDeHistorial}

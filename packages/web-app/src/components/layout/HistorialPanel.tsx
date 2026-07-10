@@ -6,6 +6,7 @@ interface HistorialPanelProps {
   proyecto: ProyectoFormData;
   historial: HistorialItem[];
   onUpdateNombre: (nombre: string) => void;
+  onUpdateCatalogoSistema: (sistema: string) => void;
   onGuardarEnHistorial: () => void;
   onCargarDesdeHistorial: (id: string) => void;
   onEliminarDeHistorial: (id: string) => void;
@@ -16,6 +17,7 @@ export const HistorialPanel: React.FC<HistorialPanelProps> = ({
   proyecto,
   historial,
   onUpdateNombre,
+  onUpdateCatalogoSistema,
   onGuardarEnHistorial,
   onCargarDesdeHistorial,
   onEliminarDeHistorial,
@@ -76,6 +78,25 @@ export const HistorialPanel: React.FC<HistorialPanelProps> = ({
           placeholder="Ej: Casa Martinez - Planta Alta"
           onChange={(e) => onUpdateNombre(e.target.value)}
         />
+      </div>
+
+      <div className={styles.formRow}>
+        <label className={styles.label}>Catálogo / Sistema de Referencia</label>
+        <select
+          id="select-catalogo-sistema"
+          className={styles.select}
+          value={proyecto.catalogo_sistema}
+          onChange={(e) => onUpdateCatalogoSistema(e.target.value)}
+        >
+          <option value="generico_estandar">Genérico Estándar</option>
+          <option value="gyplac_superboard">Gyplac / Superboard (Eternit Perú)</option>
+          <option value="tupemesa_precor">Tupemesa / Precor (Perfiles Perú)</option>
+        </select>
+        {proyecto.catalogo_sistema === 'generico_estandar' && (
+          <span className={styles.warningText}>
+            ⚠️ Usando catálogo genérico. No verificado con marcas locales.
+          </span>
+        )}
       </div>
 
       <div className={styles.btnGrid}>

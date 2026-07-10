@@ -155,4 +155,36 @@ describe('useProyecto hook tests', () => {
 
     expect(hookState.proyecto.nombre).toBe('Obra Principal');
   });
+
+  it('debería cambiar de catálogo de referencia y migrar perfiles de muro de forma segura', () => {
+    let hookState: any = null;
+
+    const TestComponent = () => {
+      hookState = useProyecto();
+      return null;
+    };
+
+    const container = window.document.createElement('div');
+    window.document.body.appendChild(container);
+    
+    act(() => {
+      const root = createRoot(container);
+      root.render(<TestComponent />);
+    });
+
+    // Catálogo por defecto
+    expect(hookState.proyecto.catalogo_sistema).toBe('generico_estandar');
+    expect(hookState.currentForm.perfil).toBe('M48'); // de la constante DEFAULT_FORM
+
+    // Cambiar al catálogo gyplac_superboard
+    act(() => {
+      hookState.updateCatalogoSistema('gyplac_superboard');
+    });
+
+    expect(hookState.proyecto.catalogo_sistema).toBe('gyplac_superboard');
+    // Debe haber migrado el perfil M48 (inexistente en gyplac) al primer perfil disponible: P38
+    expect(hookState.currentForm.perfil).toBe('P38');
+    // El desperdicio debe actualizarse al valor por defecto de gyplac (8%)
+    expect(hookState.proyecto.factor_desperdicio_pct).toBe(8);
+  });
 });
