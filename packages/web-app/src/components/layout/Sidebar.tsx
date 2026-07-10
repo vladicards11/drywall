@@ -1,10 +1,24 @@
 import React from 'react';
 import styles from './Sidebar.module.css';
 import { MuroForm } from '../form/MuroForm';
+import { MurosList } from './MurosList';
+import { UnionesPanel } from './UnionesPanel';
 import type { MuroFormData, FormErrors } from '../../hooks/useCalculadora';
+import type { UnionFormData } from '../../hooks/useProyecto';
 import type { Catalogo, Abertura } from '@drywall-calc/catalog-schemas';
 
 interface SidebarProps {
+  // Multi-muro project props
+  muros: MuroFormData[];
+  selectedMuroIdx: number;
+  uniones: UnionFormData[];
+  onSelectMuro: (idx: number) => void;
+  onAddMuro: () => void;
+  onDuplicateMuro: (idx: number) => void;
+  onRemoveMuro: (idx: number) => void;
+  onAddUnion: (u: UnionFormData) => void;
+  onRemoveUnion: (id: string) => void;
+  // Current wall form
   form: MuroFormData;
   errors: FormErrors;
   catalogo: Catalogo;
@@ -30,6 +44,26 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
       </div>
 
       <div className={styles.scrollArea}>
+        {/* Lista de muros */}
+        <MurosList
+          muros={props.muros}
+          selected={props.selectedMuroIdx}
+          onSelect={props.onSelectMuro}
+          onAdd={props.onAddMuro}
+          onDuplicate={props.onDuplicateMuro}
+          onRemove={props.onRemoveMuro}
+        />
+
+        {/* Panel de uniones */}
+        <UnionesPanel
+          muros={props.muros}
+          uniones={props.uniones}
+          tipologias={props.catalogo.tipologias_union}
+          onAdd={props.onAddUnion}
+          onRemove={props.onRemoveUnion}
+        />
+
+        {/* Formulario del muro activo */}
         <MuroForm
           form={props.form}
           errors={props.errors}

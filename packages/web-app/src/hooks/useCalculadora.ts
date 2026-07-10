@@ -51,7 +51,7 @@ function parseFormato(fmt: string): [number, number] {
   return [w, h];
 }
 
-function validateForm(form: MuroFormData): FormErrors {
+export function validateForm(form: MuroFormData): FormErrors {
   const errors: FormErrors = {};
 
   const largo = parseFloat(form.largo_m);

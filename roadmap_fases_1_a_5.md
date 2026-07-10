@@ -160,18 +160,18 @@
 - [x] **17.6** Mostrar juntas sobre el canvas (líneas diferenciadas entre placas)
 - [x] **17.7** Zoom y paneo básico en el canvas
 
-### Épica 18 — Panel de resultados de materiales
-- [ ] **18.1** Tabla de resumen de materiales (placas, perfiles, tornillos, cinta, masilla, aislante, esquineros)
-- [ ] **18.2** Sección de trazabilidad desplegable (explica cada número)
-- [ ] **18.3** Botón de exportar a PDF (con `jsPDF` o similar)
-- [ ] **18.4** Botón de exportar a Excel/CSV la tabla de materiales
-- [ ] **18.5** Compartir resultado via URL (estado del muro serializado en query params)
+### Épica 18 — Panel de resultados de materiales ✅ 100%
+- [x] **18.1** Tabla de resumen de materiales estructurada por grupos (Placas, Estructura, Fijaciones, Acabados, Aislación) con desglose de cantidad, unidad, detalle técnico y peso estructural
+- [x] **18.2** Sección de trazabilidad desplegable (card de Peso Estructural Estimado con desglose de masa)
+- [x] **18.3** Botón de exportar a PDF via `window.print()` con estilos `@media print` optimizados A4 (sin dependencias externas)
+- [x] **18.4** Botón de exportar a CSV con codificación UTF-8 BOM, descargable en cliente sin servidor
+- [x] **18.5** Compartir cálculo via URL — estado completo del formulario serializado en `URLSearchParams`, con auto-carga y auto-cálculo al montar
 
-### Épica 19 — Proyecto multi-muro
-- [ ] **19.1** Capacidad de definir un proyecto con múltiples muros
-- [ ] **19.2** Definición de uniones (encuentros) entre muros del proyecto (grafo de muros)
-- [ ] **19.3** Vista consolidada de materiales de todo el proyecto (suma de muros + factores de merma)
-- [ ] **19.4** Factor de desperdicio configurable por proyecto (`factor_desperdicio_placas_default` del catálogo)
+### Épica 19 — Proyecto multi-muro ✅ 100%
+- [x] **19.1** Capacidad de definir un proyecto con múltiples muros (MurosList.tsx y hook reactivo useProyecto)
+- [x] **19.2** Definición de uniones (encuentros) entre muros del proyecto (UnionesPanel.tsx)
+- [x] **19.3** Vista consolidada de materiales de todo el proyecto (Tab Proyecto con consolidado completo)
+- [x] **19.4** Factor de desperdicio de placas configurable dinámicamente con slider interactivo (0-30%)
 
 ### Épica 20 — Gestión de proyectos
 - [ ] **20.1** Guardar proyecto en localStorage (persistencia offline)

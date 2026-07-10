@@ -440,3 +440,101 @@
   flex: 1;
 }
 
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 2px;
+}
+
+.tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  padding: var(--space-2) var(--space-4);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.tab:hover {
+  color: var(--color-text-primary);
+}
+
+.tabActive {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.tabContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  animation: fade-in var(--transition-fast) both;
+}
+
+/* Desperdicio Card */
+.desperdicioCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.desperdicioHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--color-text-primary);
+}
+
+.desperdicioValue {
+  font-size: var(--text-base);
+  color: var(--color-accent);
+  font-weight: var(--font-bold);
+}
+
+.desperdicioSlider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+  outline: none;
+  margin: var(--space-2) 0;
+}
+
+.desperdicioSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  cursor: pointer;
+  transition: transform var(--transition-fast);
+}
+
+.desperdicioSlider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+.desperdicioInfo {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
+.desperdicioHighlight {
+  color: var(--color-primary);
+  font-weight: var(--font-bold);
+}
+
