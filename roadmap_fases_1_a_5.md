@@ -152,13 +152,13 @@
 - [x] **16.6** Botón "Calcular" que invoca `calcularMuro()` del motor
 
 ### Épica 17 — Visualizador 2D de la grilla de placas
-- [ ] **17.1** Canvas/SVG que renderiza la grilla de placas del muro usando las coordenadas `(x, y, ancho, alto)` del `ResultadoMuro.placas.detalle`
-- [ ] **17.2** Colorear diferente: placa completa vs. placa recortada (`recortada: true`)
-- [ ] **17.3** Dibujar el área de las aberturas (vanos de puerta/ventana) en el canvas
-- [ ] **17.4** Toggle entre "Cara A" y "Cara B" para muros de dos caras
-- [ ] **17.5** Toggle entre capas (para muros con `capas_por_cara > 1`)
-- [ ] **17.6** Mostrar juntas sobre el canvas (líneas diferenciadas entre placas)
-- [ ] **17.7** Zoom y paneo básico en el canvas
+- [x] **17.1** Canvas/SVG que renderiza la grilla de placas del muro usando las coordenadas `(x, y, ancho, alto)` del `ResultadoMuro.placas.detalle`
+- [x] **17.2** Colorear diferente: placa completa vs. placa recortada (`recortada: true`)
+- [x] **17.3** Dibujar el área de las aberturas (vanos de puerta/ventana) en el canvas
+- [x] **17.4** Toggle entre "Cara A" y "Cara B" para muros de dos caras
+- [x] **17.5** Toggle entre capas (para muros con `capas_por_cara > 1`)
+- [x] **17.6** Mostrar juntas sobre el canvas (líneas diferenciadas entre placas)
+- [x] **17.7** Zoom y paneo básico en el canvas
 
 ### Épica 18 — Panel de resultados de materiales
 - [ ] **18.1** Tabla de resumen de materiales (placas, perfiles, tornillos, cinta, masilla, aislante, esquineros)
