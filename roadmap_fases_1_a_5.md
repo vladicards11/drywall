@@ -173,11 +173,11 @@
 - [x] **19.3** Vista consolidada de materiales de todo el proyecto (Tab Proyecto con consolidado completo)
 - [x] **19.4** Factor de desperdicio de placas configurable dinámicamente con slider interactivo (0-30%)
 
-### Épica 20 — Gestión de proyectos
-- [ ] **20.1** Guardar proyecto en localStorage (persistencia offline)
-- [ ] **20.2** Exportar proyecto a archivo JSON
-- [ ] **20.3** Importar proyecto desde archivo JSON
-- [ ] **20.4** Historial de cálculos (últimos N proyectos)
+### Épica 20 — Gestión de proyectos ✅ 100%
+- [x] **20.1** Guardar proyecto en localStorage (persistencia offline en tiempo real)
+- [x] **20.2** Exportar proyecto a archivo JSON (descarga local)
+- [x] **20.3** Importar proyecto desde archivo JSON (file input interactivo)
+- [x] **20.4** Historial de cálculos (últimos N proyectos con persistencia local)
 
 ---
 

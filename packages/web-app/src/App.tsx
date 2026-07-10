@@ -24,15 +24,29 @@ const App: React.FC = () => {
     removeAbertura,
     addUnion,
     removeUnion,
+    updateNombre,
     updateFactorDesperdicio,
     calcular,
     compartir,
     reset,
+    // Project management extensions
+    historial,
+    guardarEnHistorial,
+    cargarDesdeHistorial,
+    eliminarDeHistorial,
+    importarProyecto,
   } = useProyecto();
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', width: '100vw' }}>
       <Sidebar
+        proyecto={proyecto}
+        historial={historial}
+        onUpdateNombre={updateNombre}
+        onGuardarEnHistorial={guardarEnHistorial}
+        onCargarDesdeHistorial={cargarDesdeHistorial}
+        onEliminarDeHistorial={eliminarDeHistorial}
+        onImportarProyecto={importarProyecto}
         muros={proyecto.muros}
         selectedMuroIdx={selectedMuroIdx}
         uniones={proyecto.uniones}

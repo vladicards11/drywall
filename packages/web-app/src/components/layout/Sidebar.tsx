@@ -3,11 +3,21 @@ import styles from './Sidebar.module.css';
 import { MuroForm } from '../form/MuroForm';
 import { MurosList } from './MurosList';
 import { UnionesPanel } from './UnionesPanel';
+import { HistorialPanel } from './HistorialPanel';
 import type { MuroFormData, FormErrors } from '../../hooks/useCalculadora';
-import type { UnionFormData } from '../../hooks/useProyecto';
+import type { UnionFormData, ProyectoFormData, HistorialItem } from '../../hooks/useProyecto';
 import type { Catalogo, Abertura } from '@drywall-calc/catalog-schemas';
 
 interface SidebarProps {
+  // Project management props
+  proyecto: ProyectoFormData;
+  historial: HistorialItem[];
+  onUpdateNombre: (nombre: string) => void;
+  onGuardarEnHistorial: () => void;
+  onCargarDesdeHistorial: (id: string) => void;
+  onEliminarDeHistorial: (id: string) => void;
+  onImportarProyecto: (datos: ProyectoFormData) => void;
+
   // Multi-muro project props
   muros: MuroFormData[];
   selectedMuroIdx: number;
@@ -18,6 +28,7 @@ interface SidebarProps {
   onRemoveMuro: (idx: number) => void;
   onAddUnion: (u: UnionFormData) => void;
   onRemoveUnion: (id: string) => void;
+
   // Current wall form
   form: MuroFormData;
   errors: FormErrors;
@@ -44,6 +55,17 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
       </div>
 
       <div className={styles.scrollArea}>
+        {/* Gestión de Proyecto y backups */}
+        <HistorialPanel
+          proyecto={props.proyecto}
+          historial={props.historial}
+          onUpdateNombre={props.onUpdateNombre}
+          onGuardarEnHistorial={props.onGuardarEnHistorial}
+          onCargarDesdeHistorial={props.onCargarDesdeHistorial}
+          onEliminarDeHistorial={props.onEliminarDeHistorial}
+          onImportarProyecto={props.onImportarProyecto}
+        />
+
         {/* Lista de muros */}
         <MurosList
           muros={props.muros}

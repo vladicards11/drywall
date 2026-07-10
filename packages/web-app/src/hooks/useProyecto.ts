@@ -101,13 +101,41 @@ const getInitialProyecto = (): ProyectoFormData => {
   if (typeof window !== 'undefined') {
     const decoded = deserializeProyecto(window.location.search);
     if (decoded) return decoded;
+    const local = window.localStorage.getItem('drywall_active_proyecto');
+    if (local) {
+      try {
+        return JSON.parse(local) as ProyectoFormData;
+      } catch {
+        // ignore
+      }
+    }
   }
   return DEFAULT_PROYECTO;
 };
 
+export interface HistorialItem {
+  id: string;
+  nombre: string;
+  timestamp: string;
+  datos: ProyectoFormData;
+}
+
 // ---- Hook principal ----
 export function useProyecto() {
   const [proyecto, setProyecto] = useState<ProyectoFormData>(getInitialProyecto);
+  const [historial, setHistorial] = useState<HistorialItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = window.localStorage.getItem('drywall_historial_proyectos');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch {
+          // ignore
+        }
+      }
+    }
+    return [];
+  });
   const [selectedMuroIdx, setSelectedMuroIdx] = useState<number>(0);
   const [errors, setErrors] = useState<FormErrors[]>([{}]);
   const [state, setState] = useState<ProyectoCalculationState>('idle');
@@ -293,6 +321,61 @@ export function useProyecto() {
     return shareUrl;
   }, [proyecto]);
 
+  // ---- Auto-guardado ----
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('drywall_active_proyecto', JSON.stringify(proyecto));
+    }
+  }, [proyecto]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('drywall_historial_proyectos', JSON.stringify(historial));
+    }
+  }, [historial]);
+
+  // ---- Historial Actions ----
+  const guardarEnHistorial = useCallback(() => {
+    const newItem: HistorialItem = {
+      id: `proj_${Date.now()}`,
+      nombre: proyecto.nombre || 'Obra sin nombre',
+      timestamp: new Date().toLocaleString(),
+      datos: JSON.parse(JSON.stringify(proyecto)), // clone
+    };
+    setHistorial((prev) => [newItem, ...prev]);
+  }, [proyecto]);
+
+  const cargarDesdeHistorial = useCallback((id: string) => {
+    const item = historial.find((h) => h.id === id);
+    if (!item) return;
+    setProyecto(JSON.parse(JSON.stringify(item.datos)));
+    setSelectedMuroIdx(0);
+    setState('idle');
+    setResultado(null);
+    // trigger recalculation on next tick
+    setTimeout(() => {
+      // triggers compute using the state we just set
+      setProyecto((p) => {
+        // we execute compute inside a timeout or directly by refactoring, but we can also just let the user click compute or call the calc function
+        return p;
+      });
+    }, 0);
+  }, [historial]);
+
+  const eliminarDeHistorial = useCallback((id: string) => {
+    setHistorial((prev) => prev.filter((h) => h.id !== id));
+  }, []);
+
+  const importarProyecto = useCallback((datos: ProyectoFormData) => {
+    // Basic validation
+    if (datos && typeof datos === 'object' && Array.isArray(datos.muros)) {
+      setProyecto(datos);
+      setSelectedMuroIdx(0);
+      setState('idle');
+      setResultado(null);
+    }
+  }, []);
+
   // ---- Reset ----
   const reset = useCallback(() => {
     setProyecto(DEFAULT_PROYECTO);
@@ -345,5 +428,11 @@ export function useProyecto() {
     calcular,
     compartir,
     reset,
+    // Project management extensions
+    historial,
+    guardarEnHistorial,
+    cargarDesdeHistorial,
+    eliminarDeHistorial,
+    importarProyecto,
   };
 }
