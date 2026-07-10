@@ -181,25 +181,26 @@
 
 ---
 
-## 🟡 FASE 4 — Catálogos de Fabricantes Reales
+## 🟡 FASE 4 — Catálogos de Fabricantes Reales (Perú y LATAM)
 
-> **Objetivo**: Soporte para catálogos de Pladur, Knauf y otros fabricantes reales, con tipologías verificadas.
+> **Objetivo**: Soporte para catálogos locales de placas (Gyplac / Superboard de Eternit) y perfiles/estructuras (Tupemesa / Precor) utilizados en Perú y Latinoamérica, con tipologías verificadas.
 
-### Épica 21 — Catálogo Pladur
-- [ ] **21.1** Relevar las tipologías reales de unión del catálogo Pladur (1.1-1, 1.1-2, 1.3-1, 1.3-2, 1.5)
-- [ ] **21.2** Verificar con consultor técnico que los `perfiles_adicionales` y `tratamiento_placa` son correctos
-- [ ] **21.3** Crear `pladur_estandar.json` en el formato del schema de catálogo
-- [ ] **21.4** Tests de regresión: correr los Casos de Oro con el catálogo Pladur y documentar diferencias respecto al genérico
+### Épica 21 — Catálogo de Placas Gyplac / Superboard (Eternit)
+- [ ] **21.1** Relevar las tipologías de placa de yeso Gyplac (ST, RH, RF) y placas de fibrocemento Superboard de Eternit Perú
+- [ ] **21.2** Verificar dimensiones comerciales estándar de placas (1.22m x 2.44m, 1.20m x 2.40m) y espesores comunes (9.5mm, 12.5mm, 15mm)
+- [ ] **21.3** Crear `gyplac_superboard.json` en el formato del schema de catálogo, incluyendo coeficientes de masa específicos
+- [ ] **21.4** Tests de regresión: correr los Casos de Oro con el catálogo de placas de Eternit y registrar diferencias respecto al genérico
 
-### Épica 22 — Catálogo Knauf
-- [ ] **22.1** Relevar las especificaciones técnicas del catálogo Knauf (tipologías de sistema W111, W112, W113, etc.)
-- [ ] **22.2** Crear `knauf_estandar.json` validado contra el schema
-- [ ] **22.3** Tests de regresión con catálogo Knauf
+### Épica 22 — Catálogo de Estructuras Tupemesa / Precor
+- [ ] **22.1** Relevar las especificaciones de perfilería metálica de Tupemesa y Precor (parantes y rieles galvanizados de 38mm, 64mm y 89mm)
+- [ ] **22.2** Configurar los dos espesores comerciales estándar de Perú: 0.45 mm (no estructural / tabiquería interior) y 0.90 mm (estructural / portante / exterior)
+- [ ] **22.3** Crear `tupemesa_precor.json` validado contra el schema de catálogo, con largos estándar de 3.00 metros
+- [ ] **22.4** Tests de regresión de perfiles con catálogo local
 
 ### Épica 23 — Selector de catálogo en la web app
-- [ ] **23.1** Dropdown "Fabricante / Catálogo" en el formulario de la web app
+- [ ] **23.1** Dropdown "Catálogo de Referencia" en el formulario de la web app (Genérico, Gyplac/Eternit, Tupemesa/Precor)
 - [ ] **23.2** Actualización dinámica de las opciones de perfil, placa y tipologías al cambiar de catálogo
-- [ ] **23.3** Advertencia visual cuando se usa el catálogo "genérico" (aún no validado de fábrica)
+- [ ] **23.3** Advertencia visual cuando se usa el catálogo "genérico" o combinaciones no estandarizadas de obra
 
 ### Épica 24 — Administrador de catálogos (para usuarios avanzados)
 - [ ] **24.1** Pantalla de "editor de catálogo" que permita modificar valores numéricos del catálogo activo
