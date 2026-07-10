@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Proyecto, Muro, Union, Abertura } from "./types.js";
+import { Proyecto, Muro, Union, Abertura, Ambiente } from "./types.js";
 
 export const AberturaSchema: z.ZodType<Abertura> = z.object({
   tipo: z.enum(["puerta", "ventana", "pase"]),
@@ -74,9 +74,16 @@ export const UnionSchema: z.ZodType<Union> = z.object({
   }),
 });
 
+export const AmbienteSchema: z.ZodType<Ambiente> = z.object({
+  id: z.string(),
+  nombre: z.string(),
+  muros: z.array(z.string()),
+});
+
 export const ProyectoSchema: z.ZodType<Proyecto> = z.object({
   proyecto: z.string(),
   catalogo: z.string(),
   elementos: z.array(MuroSchema),
   uniones: z.array(UnionSchema),
+  ambientes: z.array(AmbienteSchema).optional(),
 });

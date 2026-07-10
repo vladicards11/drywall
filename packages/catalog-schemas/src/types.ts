@@ -96,11 +96,18 @@ export interface Union {
   };
 }
 
+export interface Ambiente {
+  id: string;
+  nombre: string;
+  muros: string[];
+}
+
 export interface Proyecto {
   proyecto: string;
   catalogo: string;
   elementos: Muro[];
   uniones: Union[];
+  ambientes?: Ambiente[];
 }
 
 export interface PlacaRect {
@@ -154,6 +161,21 @@ export interface ResultadoMuro {
   trazabilidad: string[];
 }
 
+export interface ResultadoAmbiente {
+  ambiente_id: string;
+  nombre: string;
+  totales: {
+    placas: { cantidad_total: number; peso_total_kg: number };
+    perfiles: ResultadoPerfiles;
+    tornillos: ResultadoTornillos;
+    cinta: { ml_total: number; rollos: number };
+    masilla: { kg_total: number; bolsas: number };
+    aislante: { m2: number; paquetes: number };
+    esquineros: { ml_total: number };
+  };
+  muros: ResultadoMuro[];
+}
+
 export interface ResultadoProyecto {
   proyecto: string;
   muros: ResultadoMuro[];
@@ -166,4 +188,5 @@ export interface ResultadoProyecto {
     aislante: { m2: number; paquetes: number };
     esquineros: { ml_total: number };
   };
+  por_ambiente?: ResultadoAmbiente[];
 }

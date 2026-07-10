@@ -363,4 +363,81 @@ describe("Orquestador - Pruebas de integración de Casos de Oro", () => {
 
     expect(res320.perfiles.montantes).toBeGreaterThan(res280.perfiles.montantes);
   });
+
+  it("15.1-15.2 - Agrupación por ambientes, subtotales por ambiente y retrocompatibilidad", () => {
+    const muro1 = {
+      id: "muro_dormitorio_1",
+      geometria: { largo_m: 4.00, alto_m: 2.40 },
+      sistema: { estructura: "simple" as const, caras: 2 as const, capas_por_cara: 1, perfil: "M48", riel: "R48", separacion_montante_m: 0.40 },
+      placa: { tipo: "ST", espesor_mm: 12.5, formato_m: [1.20, 2.40] as [number, number], orientacion: "vertical" as const },
+      aberturas: [],
+      encuentros: []
+    };
+
+    const muro2 = {
+      ...muro1,
+      id: "muro_dormitorio_2",
+      geometria: { largo_m: 3.00, alto_m: 2.40 }
+    };
+
+    const muroOtros = {
+      ...muro1,
+      id: "muro_cocina",
+      geometria: { largo_m: 2.00, alto_m: 2.40 }
+    };
+
+    // 1. Proyecto con Ambientes
+    const proyectoConAmbientes = {
+      proyecto: "Proyecto con Ambientes",
+      catalogo: "generico_estandar",
+      elementos: [muro1, muro2, muroOtros],
+      uniones: [],
+      ambientes: [
+        {
+          id: "dormitorio",
+          nombre: "Dormitorio Principal",
+          muros: ["muro_dormitorio_1", "muro_dormitorio_2"]
+        }
+      ]
+    };
+
+    const resCon = calcularProyecto(proyectoConAmbientes, catalogo);
+
+    // Debe contener por_ambiente
+    expect(resCon.por_ambiente).toBeDefined();
+    expect(resCon.por_ambiente!.length).toBe(2); // 1 definido (dormitorio) + 1 virtual (no_asignado)
+
+    const dormitorioAmb = resCon.por_ambiente!.find(a => a.ambiente_id === "dormitorio")!;
+    const otrosAmb = resCon.por_ambiente!.find(a => a.ambiente_id === "no_asignado")!;
+
+    expect(dormitorioAmb.nombre).toBe("Dormitorio Principal");
+    expect(dormitorioAmb.muros.length).toBe(2);
+    expect(otrosAmb.nombre).toBe("Otros / Sin asignar");
+    expect(otrosAmb.muros.length).toBe(1);
+
+    // Consistencia Matemática:
+    // Placas dormitorio: muro1 (8 placas) + muro2 (ROUNDUP(3/1.2)*2 = 6 placas) = 14 placas
+    expect(dormitorioAmb.totales.placas.cantidad_total).toBe(14);
+    // Placas otros: muroOtros (ROUNDUP(2/1.2)*2 = 4 placas)
+    expect(otrosAmb.totales.placas.cantidad_total).toBe(4);
+
+    // Suma total de placas en ambientes debe ser igual al total general
+    expect(dormitorioAmb.totales.placas.cantidad_total + otrosAmb.totales.placas.cantidad_total)
+      .toBe(resCon.totales.placas.cantidad_total);
+
+    // Suma total de metros lineales de cinta en ambientes debe ser igual al total general (casi igual debido a flotantes)
+    expect(dormitorioAmb.totales.cinta.ml_total + otrosAmb.totales.cinta.ml_total)
+      .toBeCloseTo(resCon.totales.cinta.ml_total, 2);
+
+    // 2. Retrocompatibilidad: Proyecto sin Ambientes
+    const proyectoSinAmbientes = {
+      proyecto: "Proyecto Sin Ambientes",
+      catalogo: "generico_estandar",
+      elementos: [muro1, muro2],
+      uniones: []
+    };
+
+    const resSin = calcularProyecto(proyectoSinAmbientes, catalogo);
+    expect(resSin.por_ambiente).toBeUndefined();
+  });
 });

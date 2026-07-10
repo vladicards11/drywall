@@ -107,8 +107,8 @@
 - [x] **14.2** Documentar y agregar **Caso H: muro alto con empalme** a `casos-de-oro-referencia.md` con test de regresión en verde
 
 ### Épica 15 — Modelo de Ambientes (agrupador)
-- [ ] **15.1** Extender `ProyectoSchema` / `Proyecto` con `ambientes: Ambiente[]` opcional, donde cada ambiente agrupa un subconjunto de `muro_id`. Campo retrocompatible: proyectos existentes siguen validando sin cambios.
-- [ ] **15.2** `calcularProyecto` agrega un desglose de resultados por ambiente además del total del proyecto. `ResultadoProyecto.por_ambiente` existe y suma exactamente al total general.
+- [x] **15.1** Extender `ProyectoSchema` / `Proyecto` con `ambientes: Ambiente[]` opcional, donde cada ambiente agrupa un subconjunto de `muro_id`. Campo retrocompatible: proyectos existentes siguen validando sin cambios.
+- [x] **15.2** `calcularProyecto` agrega un desglose de resultados por ambiente además del total del proyecto. `ResultadoProyecto.por_ambiente` existe y suma exactamente al total general.
 
 ### Épica 16 — Exportación a Excel/PDF
 - [ ] **16.1** Spike de decisión de librería: evaluar `exceljs` para Excel y `pdf-lib` o HTML→PDF para el informe. Documentar elección y justificación (0.5d, no implementación)
@@ -268,6 +268,7 @@
 
 ## 🎯 Próximos 3 pasos inmediatos recomendados
 
-1. **Épica 10.1** — Implementar `calcularProyecto()`: es el bloqueador de toda la Fase 2 y su primera tarea es reemplazar la suma manual del Caso C en el test
-2. **Épica 11.1-11.2** — Agregar la tipología "T" al catálogo y calcular el Caso F (3 muros en nodo) — una vez desbloqueada la Épica 10
-3. **Contratar al consultor técnico del rubro** para validar las reglas de casuística de las Épicas 12 (estructura doble) y 14 (empalme) — son las más alejadas de las fórmulas estándar y más dependientes de práctica real de obra
+1. **Épica 16** — Implementar exportación a Excel/PDF (Spike y desarrollo del reporte consolidado de presupuesto)
+2. **Contratar al consultor técnico del rubro** para validar las reglas de casuística de las Épicas 12 (estructura doble) y 14 (empalme) — son las que más dependen de práctica real de obra
+3. **Fase 3** — Setup e inicio del desarrollo de la Web App (Interface Visual) para la visualización interactiva del proyecto
+
