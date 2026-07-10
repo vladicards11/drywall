@@ -138,18 +138,18 @@
 > **Objetivo**: Aplicación web que permita ingresar un muro, ver la grilla de placas en pantalla y obtener el listado de materiales.
 
 ### Épica 15 — Setup `web-app` con framework
-- [ ] **15.1** Crear `packages/web-app` con Next.js o Vite + React + TypeScript
-- [ ] **15.2** Configurar integración con `@drywall-calc/core-engine` como dependencia local del workspace
-- [ ] **15.3** Definir design system: paleta, tipografía, tokens de espacio
-- [ ] **15.4** Layout base: sidebar de configuración + panel de visualización principal
+- [x] **15.1** Crear `packages/web-app` con Next.js o Vite + React + TypeScript
+- [x] **15.2** Configurar integración con `@drywall-calc/core-engine` como dependencia local del workspace
+- [x] **15.3** Definir design system: paleta, tipografía, tokens de espacio
+- [x] **15.4** Layout base: sidebar de configuración + panel de visualización principal
 
 ### Épica 16 — Formulario de entrada de muro
-- [ ] **16.1** Campos para geometría del muro (largo, alto)
-- [ ] **16.2** Selector de sistema constructivo (perfil, separación de montantes, caras, capas)
-- [ ] **16.3** Selector de placa (tipo, espesor, formato, orientación) con las opciones del catálogo activo
-- [ ] **16.4** Formulario para agregar/editar/eliminar aberturas (tipo, ancho, alto, posición desde inicio)
-- [ ] **16.5** Validaciones en tiempo real: mostrar errores Zod inline en el formulario
-- [ ] **16.6** Botón "Calcular" que invoca `calcularMuro()` del motor
+- [x] **16.1** Campos para geometría del muro (largo, alto)
+- [x] **16.2** Selector de sistema constructivo (perfil, separación de montantes, caras, capas)
+- [x] **16.3** Selector de placa (tipo, espesor, formato, orientación) con las opciones del catálogo activo
+- [x] **16.4** Formulario para agregar/editar/eliminar aberturas (tipo, ancho, alto, posición desde inicio)
+- [x] **16.5** Validaciones en tiempo real: mostrar errores Zod inline en el formulario
+- [x] **16.6** Botón "Calcular" que invoca `calcularMuro()` del motor
 
 ### Épica 17 — Visualizador 2D de la grilla de placas
 - [ ] **17.1** Canvas/SVG que renderiza la grilla de placas del muro usando las coordenadas `(x, y, ancho, alto)` del `ResultadoMuro.placas.detalle`

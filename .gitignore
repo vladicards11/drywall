@@ -4,3 +4,4 @@ coverage/
 .gemini/
 .DS_Store
 *.log
+packages/core-engine/tests/outputs/

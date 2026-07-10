@@ -1,0 +1,61 @@
+.sidebar {
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-elevated);
+  border-right: 1px solid var(--color-border);
+  overflow: hidden;
+  position: sticky;
+  top: 0;
+}
+
+.header {
+  padding: var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+  background: var(--color-bg-elevated);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.logoBadge {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, #3B82F6, #06B6D4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-sm);
+  font-weight: var(--font-bold);
+  color: white;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.logoTitle {
+  font-size: var(--text-lg);
+  font-weight: var(--font-bold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.logoSubtitle {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin: 0;
+  margin-top: 2px;
+}
+
+.scrollArea {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}

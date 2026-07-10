@@ -1,0 +1,106 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.required {
+  color: var(--color-danger);
+  font-size: var(--text-xs);
+}
+
+.inputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input {
+  width: 100%;
+  height: 38px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  padding: 0 var(--space-3);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  -moz-appearance: textfield;
+}
+
+.input::-webkit-outer-spin-button,
+.input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.input:hover:not(:disabled) {
+  border-color: var(--color-text-muted);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--color-border-focus);
+  box-shadow: 0 0 0 3px var(--color-primary-subtle);
+}
+
+.input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.withPrefix {
+  padding-left: calc(var(--space-8) + var(--space-2));
+}
+
+.withSuffix {
+  padding-right: calc(var(--space-8) + var(--space-2));
+}
+
+.prefix, .suffix {
+  position: absolute;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--color-text-muted);
+  pointer-events: none;
+  user-select: none;
+}
+
+.prefix { left: var(--space-3); }
+.suffix { right: var(--space-3); }
+
+.hasError .input {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 3px var(--color-danger-subtle);
+}
+
+.error {
+  font-size: var(--text-xs);
+  color: var(--color-danger);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.error::before {
+  content: '⚠';
+}
+
+.hint {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
