@@ -300,13 +300,54 @@ Nota: se eligió formato de placa 1.20x3.00 (en vez de 2.40) a propósito — de
 
 ---
 
+## Caso G — Estructura doble
+
+**Input**
+```json
+{
+  "id": "muro_G",
+  "geometria": { "largo_m": 4.00, "alto_m": 2.40 },
+  "sistema": { "estructura": "doble", "caras": 2, "capas_por_cara": 1, "perfil": "M48", "riel": "R48", "separacion_montante_m": 0.40 },
+  "placa": { "tipo": "ST", "espesor_mm": 12.5, "formato_m": [1.20, 2.40], "orientacion": "vertical" },
+  "aberturas": [],
+  "encuentros": []
+}
+```
+
+**Derivación clave**
+- **Placas**: 4 columnas x 2 caras x 1 capa = 8 placas (no se duplica por estructura doble)
+- **Montantes**: (ROUNDUP(4.00/0.40)+1 = 11) x 2 líneas de estructura = 22 montantes
+- **Rieles**: (ceil 4.00 + floor 4.00 = 8.00m → 3 barras de 3m) x 2 líneas = 6 barras
+- **Juntas**: 3 juntas x 2.40m x 2 caras = 14.40 ml (no se duplica). Con traslape (1.05) = 15.12 ml → 1 rollo
+- **Masilla**: 14.40 ml x 0.3 x 3 = 12.96 kg → 1 bolsa
+- **Aislante**: area neta = 4.00 x 2.40 = 9.60 m² (no se duplica) → 1 paquete
+- **Tornillos**:
+  - Placa-perfil: 9.60 m² x 2 caras x 25/m² = 480
+  - Perfil-perfil: 22 montantes x 2 uniones x 2 = 88
+  - Anclajes losa: (techo 9 + piso 9 = 18) x 2 líneas = 36
+- **Esquineros**: 0
+
+**Output esperado**
+```json
+{
+  "placas": { "cantidad_total": 8 },
+  "perfiles": { "montantes": 22, "rieles_barras": 6, "montantes_refuerzo_vanos": 0 },
+  "tornillos": { "placa_perfil": 480, "perfil_perfil": 88, "anclajes_losa": 36 },
+  "cinta": { "ml_total": 15.12, "rollos": 1 },
+  "masilla": { "kg_total": 12.96, "bolsas": 1 },
+  "aislante": { "m2": 9.60, "paquetes": 1 },
+  "esquineros": { "ml_total": 0 }
+}
+```
+
+---
+
 ## Casos pendientes de agregar (no calculados todavía)
 
 Estos quedan identificados para sumar al banco a medida que se programen las funciones correspondientes — no bloquean el arranque del desarrollo de los Casos A-D, pero conviene no perderlos de vista:
 
 - **Unión en ángulo no ortogonal** (ej. 60°, como el ejemplo de la interfaz de Pladur): valida el corte a inglete en perfiles y el comportamiento de la modulación cuando el origen de grilla no es perpendicular.
 - **Muro más alto que el largo de barra comercial** (>3.00m): valida el empalme de montante.
-- **Estructura doble** (dos líneas de montante independientes): valida que perfiles y aislante se dupliquen correctamente sin duplicar placas.
 - **Zona húmeda con placa RH**: valida el cambio de catálogo de placa y su impacto en peso/tornillos.
 - **Cielorraso suspendido**: sistema de perfiles completamente distinto (maestras, perfiles F47), primer caso de un tipo de elemento que no es "muro".
 - **Reuso de offcuts** (Fase 4): mismo Caso B, pero verificando si el recorte de la columna 0 (con vano) puede reutilizarse en otra parte del mismo muro antes de contarlo como desperdicio.

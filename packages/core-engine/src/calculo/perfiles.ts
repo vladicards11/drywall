@@ -29,7 +29,7 @@ export function calcularPerfiles(
     }
   }
 
-  const montantesTotal = montantesBase + montantesRefuerzoVanos + montantesUnion;
+  let montantesTotal = montantesBase + montantesRefuerzoVanos + montantesUnion;
 
   // 5. Calcular rieles
   const altoMuro = muro.geometria.alto_m;
@@ -72,12 +72,21 @@ export function calcularPerfiles(
   }
 
   const totalRielLength = ceilLength + floorLength + dintelLength;
-  const rielesBarras = roundUpSafe(totalRielLength / largoBarraRiel);
+  let rielesBarras = roundUpSafe(totalRielLength / largoBarraRiel);
+  let montantesRefuerzoVanosRes = montantesRefuerzoVanos;
+  let montantesUnionRes = montantesUnion;
+
+  if (muro.sistema.estructura === "doble") {
+    montantesTotal *= 2;
+    rielesBarras *= 2;
+    montantesRefuerzoVanosRes *= 2;
+    montantesUnionRes *= 2;
+  }
 
   return {
     montantes: montantesTotal,
     rieles_barras: rielesBarras,
-    montantes_refuerzo_vanos: montantesRefuerzoVanos,
-    montantes_union: montantesUnion,
+    montantes_refuerzo_vanos: montantesRefuerzoVanosRes,
+    montantes_union: montantesUnionRes,
   };
 }

@@ -87,18 +87,30 @@ export function calcularMuro(
   const trazabilidad: string[] = [];
 
   // Trazabilidad de montantes
-  const formulaMontantesBase = `ROUNDUP(${muro.geometria.largo_m.toFixed(2)}/${muro.sistema.separacion_montante_m.toFixed(2)})+1=${Math.ceil(muro.geometria.largo_m / muro.sistema.separacion_montante_m) + 1}`;
+  const isDoble = muro.sistema.estructura === "doble";
+  const factor = isDoble ? 2 : 1;
+  const baseCount = Math.ceil(muro.geometria.largo_m / muro.sistema.separacion_montante_m) + 1;
+  const formulaMontantesBase = `ROUNDUP(${muro.geometria.largo_m.toFixed(2)}/${muro.sistema.separacion_montante_m.toFixed(2)})+1=${baseCount}`;
+
   if (perfiles.montantes_refuerzo_vanos === 0 && perfiles.montantes_union === 0) {
-    trazabilidad.push(
-      `Montantes: ${muro.geometria.largo_m.toFixed(2)}/${muro.sistema.separacion_montante_m.toFixed(2)} + 1 = ${perfiles.montantes} (sin ajustes, no hay esquinas ni vanos)`
-    );
+    let traceMontantes = `Montantes: (${muro.geometria.largo_m.toFixed(2)}/${muro.sistema.separacion_montante_m.toFixed(2)} + 1) = ${baseCount}`;
+    if (isDoble) {
+      traceMontantes += ` x 2 (estructura doble) = ${perfiles.montantes}`;
+    } else {
+      traceMontantes += ` (sin ajustes, no hay esquinas ni vanos) = ${perfiles.montantes}`;
+    }
+    trazabilidad.push(traceMontantes);
   } else {
-    let traceMontantes = `Montantes: ${formulaMontantesBase}`;
+    let traceMontantes = `Montantes: (${formulaMontantesBase}`;
     if (perfiles.montantes_refuerzo_vanos > 0) {
-      traceMontantes += `, +${perfiles.montantes_refuerzo_vanos} por jambas dobles de puerta`;
+      traceMontantes += `, +${perfiles.montantes_refuerzo_vanos / factor} por jambas dobles de puerta`;
     }
     if (perfiles.montantes_union > 0) {
-      traceMontantes += `, +${perfiles.montantes_union} por union en esquina`;
+      traceMontantes += `, +${perfiles.montantes_union / factor} por union en esquina`;
+    }
+    traceMontantes += `)`;
+    if (isDoble) {
+      traceMontantes += ` x 2 (estructura doble)`;
     }
     traceMontantes += ` = ${perfiles.montantes}`;
     trazabilidad.push(traceMontantes);

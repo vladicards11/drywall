@@ -9,6 +9,7 @@ import casoB from "./fixtures/caso-B-abertura.json" assert { type: "json" };
 import casoC from "./fixtures/caso-C-esquina.json" assert { type: "json" };
 import casoD from "./fixtures/caso-D-doble-capa.json" assert { type: "json" };
 import casoF from "./fixtures/caso-F-union-T.json" assert { type: "json" };
+import casoG from "./fixtures/caso-G-estructura-doble.json" assert { type: "json" };
 
 const catalogo = obtenerCatalogoGenericoEstandar();
 
@@ -209,5 +210,56 @@ describe("Orquestador - Pruebas de integración de Casos de Oro", () => {
 
     // Y verificamos que los anclajes de losa sean mayores o iguales debido al aumento de longitud por inglete
     expect(res60.tornillos.anclajes_losa).toBeGreaterThanOrEqual(res90.tornillos.anclajes_losa);
+  });
+
+  it("Caso G - Muro simple con estructura doble", () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const res = calcularMuro(casoG.input as any, [], catalogo);
+
+    expect(res.placas.cantidad_total).toBe(casoG.output_esperado.placas.cantidad_total);
+    expect(res.perfiles.montantes).toBe(casoG.output_esperado.perfiles.montantes);
+    expect(res.perfiles.rieles_barras).toBe(casoG.output_esperado.perfiles.rieles_barras);
+    expect(res.tornillos.placa_perfil).toBe(casoG.output_esperado.tornillos.placa_perfil);
+    expect(res.tornillos.perfil_perfil).toBe(casoG.output_esperado.tornillos.perfil_perfil);
+    expect(res.tornillos.anclajes_losa).toBe(casoG.output_esperado.tornillos.anclajes_losa);
+    expect(res.cinta.ml_total).toBeCloseTo(casoG.output_esperado.cinta.ml_total, 2);
+    expect(res.cinta.rollos).toBe(casoG.output_esperado.cinta.rollos);
+    expect(res.masilla.kg_total).toBeCloseTo(casoG.output_esperado.masilla.kg_total, 2);
+    expect(res.masilla.bolsas).toBe(casoG.output_esperado.masilla.bolsas);
+    expect(res.aislante.m2).toBeCloseTo(casoG.output_esperado.aislante.m2, 2);
+    expect(res.aislante.paquetes).toBe(casoG.output_esperado.aislante.paquetes);
+    expect(res.esquineros.ml_total).toBeCloseTo(casoG.output_esperado.esquineros.ml_total, 2);
+  });
+
+  it("12.1 - Comparativa estructura simple vs doble: duplica perfiles y anclajes, pero mantiene placas y aislante", () => {
+    const muroSimple = {
+      id: "muro_simple",
+      geometria: { largo_m: 4.00, alto_m: 2.40 },
+      sistema: { estructura: "simple" as const, caras: 2 as const, capas_por_cara: 1, perfil: "M48", riel: "R48", separacion_montante_m: 0.40 },
+      placa: { tipo: "ST", espesor_mm: 12.5, formato_m: [1.20, 2.40] as [number, number], orientacion: "vertical" as const },
+      aberturas: [],
+      encuentros: []
+    };
+
+    const muroDoble = {
+      ...muroSimple,
+      id: "muro_doble",
+      sistema: {
+        ...muroSimple.sistema,
+        estructura: "doble" as const
+      }
+    };
+
+    const resSimple = calcularMuro(muroSimple, [], catalogo);
+    const resDoble = calcularMuro(muroDoble, [], catalogo);
+
+    // Duplicación x2 en estructura y anclajes
+    expect(resDoble.perfiles.montantes).toBe(resSimple.perfiles.montantes * 2);
+    expect(resDoble.perfiles.rieles_barras).toBe(resSimple.perfiles.rieles_barras * 2);
+    expect(resDoble.tornillos.anclajes_losa).toBe(resSimple.tornillos.anclajes_losa * 2);
+
+    // Placas y aislante NO se duplican
+    expect(resDoble.placas.cantidad_total).toBe(resSimple.placas.cantidad_total);
+    expect(resDoble.aislante.m2).toBeCloseTo(resSimple.aislante.m2, 2);
   });
 });

@@ -93,9 +93,9 @@
 - [ ] **11.4** Soporte de ángulo no ortogonal en una unión (ej. 60°): corte a inglete en la longitud de perfil consumida en el nodo. Test unitario: unión a 60° consume más longitud de perfil en el nodo que una a 90°
 
 ### Épica 12 — Casuística: estructura doble
-- [ ] **12.1** En `calcularPerfiles`: si `sistema.estructura === "doble"`, duplicar la línea de montantes y riel (dos líneas independientes de estructura). Test: mismo muro simple vs. doble → montantes y rieles exactamente ×2
-- [ ] **12.2** En `calcularAislante`: con estructura doble el área neta se aísla una sola vez, pero el catálogo debe permitir un espesor distinto por línea si corresponde. Test unitario específico.
-- [ ] **12.3** Documentar y agregar **Caso G: estructura doble** a `casos-de-oro-referencia.md` con test de regresión en verde
+- [x] **12.1** En `calcularPerfiles`: si `sistema.estructura === "doble"`, duplicar la línea de montantes y riel (dos líneas independientes de estructura). Test: mismo muro simple vs. doble → montantes y rieles exactamente ×2
+- [x] **12.2** En `calcularAislante`: con estructura doble el área neta se aísla una sola vez, pero el catálogo debe permitir un espesor distinto por línea si corresponde. Test unitario específico.
+- [x] **12.3** Documentar y agregar **Caso G: estructura doble** a `casos-de-oro-referencia.md` con test de regresión en verde
 
 ### Épica 13 — Casuística: zonas húmedas (placa RH) y resistencia al fuego (placa RF)
 - [ ] **13.1** Agregar entradas `RH` y `RF` al catálogo genérico (`generico_estandar.json`) con su `espesor_mm` y `peso_kg_m2` propios — el catálogo valida sin errores

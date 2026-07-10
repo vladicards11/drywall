@@ -9,8 +9,8 @@ describe("Epic 9 - Property-based / Hardening tests", () => {
     // Corremos 100 iteraciones con parámetros aleatorios válidos
     for (let iter = 0; iter < 100; iter++) {
       // Dimensiones aleatorias de muro
-      const largo = 2.0 + Math.random() * 8.0; // de 2m a 10m
-      const alto = 2.0 + Math.random() * 2.0;  // de 2m a 4m
+      const largo = parseFloat((2.0 + Math.random() * 8.0).toFixed(2)); // de 2m a 10m
+      const alto = parseFloat((2.0 + Math.random() * 2.0).toFixed(2));  // de 2m a 4m
       const separacion = Math.random() > 0.5 ? 0.40 : 0.60;
 
       // Formatos aleatorios
@@ -20,22 +20,23 @@ describe("Epic 9 - Property-based / Hardening tests", () => {
       const aberturas = [];
       if (Math.random() > 0.3) {
         // Añadir una puerta en una ubicación válida
-        const anchoVano = 0.8 + Math.random() * 0.4; // 0.8m a 1.2m
-        const altoVano = 1.8 + Math.random() * 0.4;  // 1.8m a 2.2m
+        const anchoVano = parseFloat((0.8 + Math.random() * 0.4).toFixed(2)); // 0.8m a 1.2m
+        const altoVano = parseFloat((1.8 + Math.random() * 0.4).toFixed(2));  // 1.8m a 2.2m
         if (anchoVano < largo - 0.5 && altoVano < alto) {
-          const dist = Math.random() * (largo - anchoVano);
+          const maxDist = largo - anchoVano - 0.05;
+          const dist = parseFloat((Math.random() * maxDist).toFixed(2));
           aberturas.push({
             tipo: "puerta" as const,
-            ancho_m: parseFloat(anchoVano.toFixed(2)),
-            alto_m: parseFloat(altoVano.toFixed(2)),
-            distancia_desde_inicio_m: parseFloat(dist.toFixed(2)),
+            ancho_m: anchoVano,
+            alto_m: altoVano,
+            distancia_desde_inicio_m: dist,
           });
         }
       }
 
       const muro = {
         id: `muro_rand_${iter}`,
-        geometria: { largo_m: parseFloat(largo.toFixed(2)), alto_m: parseFloat(alto.toFixed(2)) },
+        geometria: { largo_m: largo, alto_m: alto },
         sistema: {
           estructura: "simple" as const,
           caras: 2 as const,

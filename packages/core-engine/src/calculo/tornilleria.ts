@@ -88,9 +88,14 @@ export function calcularTornilleria(
     if (len > 1e-9) anclajesLosa += roundUpSafe(len / separacionAnclajes) + 1;
   }
 
+  let anclajesLosaTotal = anclajesLosa;
+  if (muro.sistema.estructura === "doble") {
+    anclajesLosaTotal *= 2;
+  }
+
   return {
     placa_perfil: placaPerfil,
     perfil_perfil: perfilPerfil,
-    anclajes_losa: anclajesLosa,
+    anclajes_losa: anclajesLosaTotal,
   };
 }
