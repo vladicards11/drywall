@@ -10,6 +10,7 @@ import casoC from "./fixtures/caso-C-esquina.json" assert { type: "json" };
 import casoD from "./fixtures/caso-D-doble-capa.json" assert { type: "json" };
 import casoF from "./fixtures/caso-F-union-T.json" assert { type: "json" };
 import casoG from "./fixtures/caso-G-estructura-doble.json" assert { type: "json" };
+import casoH from "./fixtures/caso-H-muro-alto-empalme.json" assert { type: "json" };
 
 const catalogo = obtenerCatalogoGenericoEstandar();
 
@@ -310,5 +311,56 @@ describe("Orquestador - Pruebas de integración de Casos de Oro", () => {
 
     const resProyecto = calcularProyecto(proyecto, catalogo);
     expect(resProyecto.totales.placas.peso_total_kg).toBeCloseTo(182.40 + 222.72, 1);
+  });
+
+  it("Caso H - Muro alto con empalme de montante", () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const res = calcularMuro(casoH.input as any, [], catalogo);
+
+    expect(res.placas.cantidad_total).toBe(casoH.output_esperado.placas.cantidad_total);
+    expect(res.placas.peso_total_kg).toBeCloseTo(casoH.output_esperado.placas.peso_total_kg, 2);
+    expect(res.perfiles.montantes).toBe(casoH.output_esperado.perfiles.montantes);
+    expect(res.perfiles.rieles_barras).toBe(casoH.output_esperado.perfiles.rieles_barras);
+    expect(res.tornillos.placa_perfil).toBe(casoH.output_esperado.tornillos.placa_perfil);
+    expect(res.tornillos.perfil_perfil).toBe(casoH.output_esperado.tornillos.perfil_perfil);
+    expect(res.tornillos.anclajes_losa).toBe(casoH.output_esperado.tornillos.anclajes_losa);
+    expect(res.cinta.ml_total).toBeCloseTo(casoH.output_esperado.cinta.ml_total, 2);
+    expect(res.cinta.rollos).toBe(casoH.output_esperado.cinta.rollos);
+    expect(res.masilla.kg_total).toBeCloseTo(casoH.output_esperado.masilla.kg_total, 2);
+    expect(res.masilla.bolsas).toBe(casoH.output_esperado.masilla.bolsas);
+    expect(res.aislante.m2).toBeCloseTo(casoH.output_esperado.aislante.m2, 2);
+    expect(res.aislante.paquetes).toBe(casoH.output_esperado.aislante.paquetes);
+    expect(res.esquineros.ml_total).toBeCloseTo(casoH.output_esperado.esquineros.ml_total, 2);
+  });
+
+  it("14.1 - Muro de 3.20m con montante de barra de 3.00m requiere empalme (consume más perfiles) vs muro de 2.80m", () => {
+    const muro280 = {
+      id: "muro_280",
+      geometria: { largo_m: 3.60, alto_m: 2.80 },
+      sistema: { estructura: "simple" as const, caras: 2 as const, capas_por_cara: 1, perfil: "M48", riel: "R48", separacion_montante_m: 0.40 },
+      placa: { tipo: "ST", espesor_mm: 12.5, formato_m: [1.20, 2.40] as [number, number], orientacion: "vertical" as const },
+      aberturas: [],
+      encuentros: []
+    };
+
+    const muro320 = {
+      ...muro280,
+      id: "muro_320",
+      geometria: {
+        ...muro280.geometria,
+        alto_m: 3.20
+      }
+    };
+
+    const res280 = calcularMuro(muro280, [], catalogo);
+    const res320 = calcularMuro(muro320, [], catalogo);
+
+    // Muro de 2.80m: 10 lineas verticales, sin empalme = 10 barras
+    expect(res280.perfiles.montantes).toBe(10);
+
+    // Muro de 3.20m: 10 lineas verticales, requiere empalme = 12 barras (ROUNDUP(10 * 3.50 / 3.00))
+    expect(res320.perfiles.montantes).toBe(12);
+
+    expect(res320.perfiles.montantes).toBeGreaterThan(res280.perfiles.montantes);
   });
 });

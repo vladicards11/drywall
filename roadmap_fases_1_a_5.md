@@ -80,17 +80,17 @@
 > **Prerrequisito de Fase 1**: Aplicar `fix-build-ci-lint.patch` antes de tocar código de esta fase ✅ (ya aplicado)
 
 ### Épica 10 — Orquestador de Proyecto (`calcularProyecto`) ← BLOQUEA TODO
-- [ ] **10.1** Validación de integridad referencial: cada `union.muros_conectados` debe apuntar a `id` de muros existentes en el proyecto; un muro que no existe lanza `ProyectoInvalidoError` tipado, nunca un `undefined` silencioso
-- [ ] **10.2** Implementar `calcularProyecto(proyecto, catalogo): ResultadoProyecto` que llama a `calcularMuro` por cada muro y consolida cinta/masilla/aislante a nivel proyecto (idéntico al cálculo que hoy está a mano en el test del Caso C)
-- [ ] **10.3** Reemplazar la suma manual del test Caso C en `orquestador.test.ts` por una llamada real a `calcularProyecto` — eliminar los dos caminos de cálculo paralelos
+- [x] **10.1** Validación de integridad referencial: cada `union.muros_conectados` debe apuntar a `id` de muros existentes en el proyecto; un muro que no existe lanza `ProyectoInvalidoError` tipado, nunca un `undefined` silencioso
+- [x] **10.2** Implementar `calcularProyecto(proyecto, catalogo): ResultadoProyecto` que llama a `calcularMuro` por cada muro y consolida cinta/masilla/aislante a nivel proyecto (idéntico al cálculo que hoy está a mano en el test del Caso C)
+- [x] **10.3** Reemplazar la suma manual del test Caso C en `orquestador.test.ts` por una llamada real a `calcularProyecto` — eliminar los dos caminos de cálculo paralelos
 
 > 🎯 **Checkpoint**: El Caso C deja de ser un caso especial sumado a mano y pasa a ser un proyecto real de 2 muros procesado por el orquestador.
 
 ### Épica 11 — Uniones extendidas (T, cruces, más de 2 muros)
-- [ ] **11.1** Agregar tipología de unión "T" al catálogo genérico (`n_muros_soportados: 3`) — validar sin errores de schema
-- [ ] **11.2** Calcular y documentar **Caso F: unión en T** (3 muros en un nodo) en `casos-de-oro-referencia.md` con valores calculados a mano y trazabilidad completa
-- [ ] **11.3** Ejecutar Caso F contra `calcularProyecto` y corregir si aparece algún caso no contemplado (ej. reparto de perfiles adicionales entre 3 muros vs. asignarlos todos al primero alfabético)
-- [ ] **11.4** Soporte de ángulo no ortogonal en una unión (ej. 60°): corte a inglete en la longitud de perfil consumida en el nodo. Test unitario: unión a 60° consume más longitud de perfil en el nodo que una a 90°
+- [x] **11.1** Agregar tipología de unión "T" al catálogo genérico (`n_muros_soportados: 3`) — validar sin errores de schema
+- [x] **11.2** Calcular y documentar **Caso F: unión en T** (3 muros en un nodo) en `casos-de-oro-referencia.md` con valores calculados a mano y trazabilidad completa
+- [x] **11.3** Ejecutar Caso F contra `calcularProyecto` y corregir si aparece algún caso no contemplado (ej. reparto de perfiles adicionales entre 3 muros vs. asignarlos todos al primero alfabético)
+- [x] **11.4** Soporte de ángulo no ortogonal en una unión (ej. 60°): corte a inglete en la longitud de perfil consumida en el nodo. Test unitario: unión a 60° consume más longitud de perfil en el nodo que una a 90°
 
 ### Épica 12 — Casuística: estructura doble
 - [x] **12.1** En `calcularPerfiles`: si `sistema.estructura === "doble"`, duplicar la línea de montantes y riel (dos líneas independientes de estructura). Test: mismo muro simple vs. doble → montantes y rieles exactamente ×2
@@ -103,8 +103,8 @@
 - [x] **13.3** Agregar `placas.peso_total_kg` al `ResultadoMuro` (área instalada × `peso_kg_m2` de la placa seleccionada) — dato relevante para flete y carga estructural
 
 ### Épica 14 — Casuística: muros altos con empalme de montante
-- [ ] **14.1** En `calcularPerfiles`: si `alto_m` supera `largo_barra_m` del perfil de montante, calcular el empalme (montante adicional de refuerzo). Test: muro de 3.20m con barra de 3.00m requiere empalme; muro de 2.80m no.
-- [ ] **14.2** Documentar y agregar **Caso H: muro alto con empalme** a `casos-de-oro-referencia.md` con test de regresión en verde
+- [x] **14.1** En `calcularPerfiles`: si `alto_m` supera `largo_barra_m` del perfil de montante, calcular el empalme (montante adicional de refuerzo). Test: muro de 3.20m con barra de 3.00m requiere empalme; muro de 2.80m no.
+- [x] **14.2** Documentar y agregar **Caso H: muro alto con empalme** a `casos-de-oro-referencia.md` con test de regresión en verde
 
 ### Épica 15 — Modelo de Ambientes (agrupador)
 - [ ] **15.1** Extender `ProyectoSchema` / `Proyecto` con `ambientes: Ambiente[]` opcional, donde cada ambiente agrupa un subconjunto de `muro_id`. Campo retrocompatible: proyectos existentes siguen validando sin cambios.
@@ -256,7 +256,7 @@
 | Fase | Descripción | Épicas | Estimación | Estado |
 |---|---|---|---|---|
 | **Fase 1** | MVP Motor de Cálculo | 0–9 | ~28-30 días-persona | ✅ COMPLETADA |
-| **Fase 2** | Proyecto Completo (Motor Maduro) | 10–16 | ~24-26 días-persona | ⬜ No iniciada |
+| **Fase 2** | Proyecto Completo (Motor Maduro) | 10–16 | ~24-26 días-persona | ⬜ En progreso |
 | **Fase 3** | Web App Visual | 17–24 | ~30-40 días-persona | ⬜ No iniciada |
 | **Fase 4** | Catálogos fabricantes reales | 25–28 | ~15-20 días-persona | ⬜ No iniciada |
 | **Fase 5** | Integración BIM/IFC + Plugins CAD | 29–37 | ~40-60 días-persona | ⬜ No iniciada |

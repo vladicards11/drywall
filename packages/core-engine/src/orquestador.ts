@@ -92,13 +92,21 @@ export function calcularMuro(
   const baseCount = Math.ceil(muro.geometria.largo_m / muro.sistema.separacion_montante_m) + 1;
   const formulaMontantesBase = `ROUNDUP(${muro.geometria.largo_m.toFixed(2)}/${muro.sistema.separacion_montante_m.toFixed(2)})+1=${baseCount}`;
 
+  const montanteConfig = catalogo.perfiles.montante.find((m) => m.codigo === muro.sistema.perfil);
+  const largoBarraMontante = montanteConfig ? montanteConfig.largo_barra_m : 3.00;
+  const requiereEmpalme = muro.geometria.alto_m > largoBarraMontante;
+
   if (perfiles.montantes_refuerzo_vanos === 0 && perfiles.montantes_union === 0) {
     let traceMontantes = `Montantes: (${muro.geometria.largo_m.toFixed(2)}/${muro.sistema.separacion_montante_m.toFixed(2)} + 1) = ${baseCount}`;
     if (isDoble) {
-      traceMontantes += ` x 2 (estructura doble) = ${perfiles.montantes}`;
+      traceMontantes += ` x 2 (estructura doble)`;
     } else {
-      traceMontantes += ` (sin ajustes, no hay esquinas ni vanos) = ${perfiles.montantes}`;
+      traceMontantes += ` (sin ajustes, no hay esquinas ni vanos)`;
     }
+    if (requiereEmpalme) {
+      traceMontantes += ` con empalme (traslape 0.30m, total ${baseCount * factor} lineas x 3.50m / 3.00m)`;
+    }
+    traceMontantes += ` = ${perfiles.montantes}`;
     trazabilidad.push(traceMontantes);
   } else {
     let traceMontantes = `Montantes: (${formulaMontantesBase}`;
@@ -111,6 +119,10 @@ export function calcularMuro(
     traceMontantes += `)`;
     if (isDoble) {
       traceMontantes += ` x 2 (estructura doble)`;
+    }
+    if (requiereEmpalme) {
+      const lineasTotal = (baseCount + perfiles.montantes_refuerzo_vanos / factor + perfiles.montantes_union / factor) * factor;
+      traceMontantes += ` con empalme (traslape 0.30m, total ${lineasTotal} lineas x 3.50m / 3.00m)`;
     }
     traceMontantes += ` = ${perfiles.montantes}`;
     trazabilidad.push(traceMontantes);

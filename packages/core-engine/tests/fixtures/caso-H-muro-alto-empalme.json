@@ -1,0 +1,19 @@
+{
+  "input": {
+    "id": "muro_H",
+    "geometria": { "largo_m": 3.60, "alto_m": 3.20 },
+    "sistema": { "estructura": "simple", "caras": 2, "capas_por_cara": 1, "perfil": "M48", "riel": "R48", "separacion_montante_m": 0.40 },
+    "placa": { "tipo": "ST", "espesor_mm": 12.5, "formato_m": [1.20, 2.40], "orientacion": "vertical" },
+    "aberturas": [],
+    "encuentros": []
+  },
+  "output_esperado": {
+    "placas": { "cantidad_total": 6, "peso_total_kg": 218.88 },
+    "perfiles": { "montantes": 12, "rieles_barras": 3, "montantes_refuerzo_vanos": 0 },
+    "tornillos": { "placa_perfil": 576, "perfil_perfil": 48, "anclajes_losa": 18 },
+    "cinta": { "ml_total": 13.44, "rollos": 1 },
+    "masilla": { "kg_total": 11.52, "bolsas": 1 },
+    "aislante": { "m2": 11.52, "paquetes": 1 },
+    "esquineros": { "ml_total": 0 }
+  }
+}
