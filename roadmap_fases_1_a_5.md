@@ -65,42 +65,71 @@
 
 ---
 
-## 🔵 FASE 2 — API REST + CLI (Motor Expuesto como Servicio)
+## 🔵 FASE 2 — Proyecto Completo (Motor Maduro)
 
-> **Objetivo**: Hacer que el motor pueda ser consumido externamente por cualquier cliente (web, CLI, Postman, futuros frontends).
+> **Objetivo**: Múltiples muros/ambientes, motor de reglas de casuística completo (estructura doble, zonas húmedas/RF, muros altos con empalme) y exportación.
 >
-> **Prerrequisito crítico**: Antes de comenzar, validar el catálogo genérico y las fórmulas con un consultor técnico del rubro (instalador/calculista), comparando los resultados contra Pladur Calc o Knauf.
+> **Punto de partida verificado en el repo** (no supuesto — confirmado leyendo el código actual):
+> - `ProyectoSchema` y `UnionSchema` **ya existen** — la validación Zod de esta fase está adelantada
+> - **No existe `calcularProyecto`** — el Caso C de Fase 1 consolida 2 muros manualmente en el test
+> - `sistema.estructura: "simple" | "doble"` existe en el tipo `Muro` pero **`calcularPerfiles` lo ignora**
+> - `calcularPerfiles` y `calcularEsquineros` ya soportan uniones con N muros — falta el caso de oro que lo confirme
+> - No hay soporte para empalme de montante en muros altos
+> - No hay agrupador `Ambientes`, ni exportación a Excel/PDF
+>
+> **Prerrequisito de Fase 1**: Aplicar `fix-build-ci-lint.patch` antes de tocar código de esta fase ✅ (ya aplicado)
 
-### Épica 10 — Validación técnica de obra (NO PROGRAMACIÓN)
-- [ ] **10.1** Buscar y contratar un consultor técnico del rubro (instalador o calculista de drywall) — rol #3 de la skill de equipo
-- [ ] **10.2** Correr los Casos de Oro A y B en una calculadora comercial real (Pladur Calc / Knauf) y comparar resultados
-- [ ] **10.3** Documentar discrepancias (si las hay) y ajustar el catálogo genérico y/o las fórmulas
-- [ ] **10.4** Actualizar `casos-de-oro-referencia.md` con la fuente de validación de cada caso
+### Épica 10 — Orquestador de Proyecto (`calcularProyecto`) ← BLOQUEA TODO
+- [ ] **10.1** Validación de integridad referencial: cada `union.muros_conectados` debe apuntar a `id` de muros existentes en el proyecto; un muro que no existe lanza `ProyectoInvalidoError` tipado, nunca un `undefined` silencioso
+- [ ] **10.2** Implementar `calcularProyecto(proyecto, catalogo): ResultadoProyecto` que llama a `calcularMuro` por cada muro y consolida cinta/masilla/aislante a nivel proyecto (idéntico al cálculo que hoy está a mano en el test del Caso C)
+- [ ] **10.3** Reemplazar la suma manual del test Caso C en `orquestador.test.ts` por una llamada real a `calcularProyecto` — eliminar los dos caminos de cálculo paralelos
 
-### Épica 11 — Nuevo paquete `api-server`
-- [ ] **11.1** Crear `packages/api-server` con Express o Fastify + TypeScript
-- [ ] **11.2** Endpoint `POST /calcular-muro` que recibe `{ muro, uniones, catalogo? }` y devuelve `ResultadoMuro`
-- [ ] **11.3** Middleware de validación Zod en la frontera HTTP (rechaza JSON inválido antes de tocar el motor)
-- [ ] **11.4** Endpoint `GET /catalogo/:id` para consultar catálogos disponibles
-- [ ] **11.5** Respuestas de error claras y tipadas (`GeometriaInvalidaError` → HTTP 400 con mensaje descriptivo)
-- [ ] **11.6** Tests de integración HTTP con Vitest + supertest para cada endpoint
+> 🎯 **Checkpoint**: El Caso C deja de ser un caso especial sumado a mano y pasa a ser un proyecto real de 2 muros procesado por el orquestador.
 
-### Épica 12 — CLI interactivo
-- [ ] **12.1** Crear `packages/cli` con un script ejecutable via `npx drywall-calc <archivo.json>`
-- [ ] **12.2** Output en tabla formateada en terminal (usando `chalk` o similar)
-- [ ] **12.3** Flag `--formato=json` para output en JSON crudo (para integración con otros scripts)
-- [ ] **12.4** Flag `--catalogo=<ruta.json>` para usar un catálogo externo personalizado
-- [ ] **12.5** Modo `--validar-solo` que solo corre las validaciones Zod sin calcular
+### Épica 11 — Uniones extendidas (T, cruces, más de 2 muros)
+- [ ] **11.1** Agregar tipología de unión "T" al catálogo genérico (`n_muros_soportados: 3`) — validar sin errores de schema
+- [ ] **11.2** Calcular y documentar **Caso F: unión en T** (3 muros en un nodo) en `casos-de-oro-referencia.md` con valores calculados a mano y trazabilidad completa
+- [ ] **11.3** Ejecutar Caso F contra `calcularProyecto` y corregir si aparece algún caso no contemplado (ej. reparto de perfiles adicionales entre 3 muros vs. asignarlos todos al primero alfabético)
+- [ ] **11.4** Soporte de ángulo no ortogonal en una unión (ej. 60°): corte a inglete en la longitud de perfil consumida en el nodo. Test unitario: unión a 60° consume más longitud de perfil en el nodo que una a 90°
 
-### Épica 13 — Documentación de la API
-- [ ] **13.1** Generar especificación OpenAPI 3.0 (Swagger) de los endpoints
-- [ ] **13.2** Página de documentación interactiva (Swagger UI o Redoc) servida junto con la API
-- [ ] **13.3** `README.md` actualizado con ejemplos de uso via cURL y CLI
+### Épica 12 — Casuística: estructura doble
+- [ ] **12.1** En `calcularPerfiles`: si `sistema.estructura === "doble"`, duplicar la línea de montantes y riel (dos líneas independientes de estructura). Test: mismo muro simple vs. doble → montantes y rieles exactamente ×2
+- [ ] **12.2** En `calcularAislante`: con estructura doble el área neta se aísla una sola vez, pero el catálogo debe permitir un espesor distinto por línea si corresponde. Test unitario específico.
+- [ ] **12.3** Documentar y agregar **Caso G: estructura doble** a `casos-de-oro-referencia.md` con test de regresión en verde
 
-### Épica 14 — Deployment de la API
-- [ ] **14.1** Dockerfile para el servidor API
-- [ ] **14.2** Publicar `@drywall-calc/cli` en npm para instalación global
-- [ ] **14.3** Actualizar CI/CD en GitHub Actions para build y tests del nuevo paquete
+### Épica 13 — Casuística: zonas húmedas (placa RH) y resistencia al fuego (placa RF)
+- [ ] **13.1** Agregar entradas `RH` y `RF` al catálogo genérico (`generico_estandar.json`) con su `espesor_mm` y `peso_kg_m2` propios — el catálogo valida sin errores
+- [ ] **13.2** Test explícito con placa RF (15mm): verificar que `calcularTornilleria` usa la densidad de tornillos del espesor real (`placa_perfil_por_m2["15mm"]`), distinta a la de 12.5mm
+- [ ] **13.3** Agregar `placas.peso_total_kg` al `ResultadoMuro` (área instalada × `peso_kg_m2` de la placa seleccionada) — dato relevante para flete y carga estructural
+
+### Épica 14 — Casuística: muros altos con empalme de montante
+- [ ] **14.1** En `calcularPerfiles`: si `alto_m` supera `largo_barra_m` del perfil de montante, calcular el empalme (montante adicional de refuerzo). Test: muro de 3.20m con barra de 3.00m requiere empalme; muro de 2.80m no.
+- [ ] **14.2** Documentar y agregar **Caso H: muro alto con empalme** a `casos-de-oro-referencia.md` con test de regresión en verde
+
+### Épica 15 — Modelo de Ambientes (agrupador)
+- [ ] **15.1** Extender `ProyectoSchema` / `Proyecto` con `ambientes: Ambiente[]` opcional, donde cada ambiente agrupa un subconjunto de `muro_id`. Campo retrocompatible: proyectos existentes siguen validando sin cambios.
+- [ ] **15.2** `calcularProyecto` agrega un desglose de resultados por ambiente además del total del proyecto. `ResultadoProyecto.por_ambiente` existe y suma exactamente al total general.
+
+### Épica 16 — Exportación a Excel/PDF
+- [ ] **16.1** Spike de decisión de librería: evaluar `exceljs` para Excel y `pdf-lib` o HTML→PDF para el informe. Documentar elección y justificación (0.5d, no implementación)
+- [ ] **16.2** Exportador de `ResultadoProyecto` a Excel: hoja de resumen de materiales + hoja de detalle por muro. El archivo generado abre sin errores en Excel/LibreOffice y los totales coinciden con el resultado de origen.
+- [ ] **16.3** Exportador a PDF con el mismo contenido formateado como presupuesto/lista de materiales. Las cifras del PDF coinciden exactamente con el Excel, sin discrepancias.
+
+> **Dependencias de Fase 2:**
+> ```
+> Épica 10 ← bloquea todo lo demás
+>    ├─▶ Épica 11 (uniones T/ángulos)
+>    ├─▶ Épica 12 (estructura doble)
+>    ├─▶ Épica 13 (zonas húmedas/RF)
+>    ├─▶ Épica 14 (empalme de montante)
+>    ├─▶ Épica 15 (ambientes)
+>    └─▶ Épica 16 (exportación) ← conviene última, depende de ResultadoProyecto estabilizado
+> ```
+> Las Épicas 11–15 son **independientes entre sí** una vez cerrada la 10 — se pueden paralelizar.
+>
+> ⚠️ Las Épicas 12 y 14 requieren revisión del **consultor técnico del rubro** — son las que más dependen de práctica real de obra y se apartan de fórmulas de libro.
+>
+> **Estimación**: ~24-26 días-persona, sin contar la validación del consultor técnico.
 
 ---
 
@@ -224,21 +253,21 @@
 
 ## 📊 Estimación Total del Proyecto
 
-| Fase | Descripción | Estimación | Estado |
-|---|---|---|---|
-| **Fase 1** | MVP Motor de Cálculo | ~28-30 días-persona | ✅ COMPLETADA |
-| **Fase 2** | API REST + CLI | ~15-20 días-persona | ⬜ No iniciada |
-| **Fase 3** | Web App Visual | ~30-40 días-persona | ⬜ No iniciada |
-| **Fase 4** | Catálogos fabricantes reales | ~15-20 días-persona | ⬜ No iniciada |
-| **Fase 5** | Integración BIM/IFC + Plugins CAD | ~40-60 días-persona | ⬜ No iniciada |
-| **Total** | | **~130-170 días-persona** | |
+| Fase | Descripción | Épicas | Estimación | Estado |
+|---|---|---|---|---|
+| **Fase 1** | MVP Motor de Cálculo | 0–9 | ~28-30 días-persona | ✅ COMPLETADA |
+| **Fase 2** | Proyecto Completo (Motor Maduro) | 10–16 | ~24-26 días-persona | ⬜ No iniciada |
+| **Fase 3** | Web App Visual | 17–24 | ~30-40 días-persona | ⬜ No iniciada |
+| **Fase 4** | Catálogos fabricantes reales | 25–28 | ~15-20 días-persona | ⬜ No iniciada |
+| **Fase 5** | Integración BIM/IFC + Plugins CAD | 29–37 | ~40-60 días-persona | ⬜ No iniciada |
+| **Total** | | | **~140-180 días-persona** | |
 
-> Las estimaciones asumen un desarrollador senior del perfil adecuado para cada fase. Se deben sumar las horas del **consultor técnico del rubro** (validación de fórmulas en Fases 1-4) y el **especialista BIM/IFC** (Fase 5), que corren en paralelo y no están incluidos en las estimaciones de arriba.
+> Las estimaciones asumen un desarrollador senior del perfil adecuado para cada fase. Se deben sumar las horas del **consultor técnico del rubro** (validación de fórmulas, especialmente Épicas 12 y 14) y el **especialista BIM/IFC** (Fase 5), que corren en paralelo y no están incluidos en las estimaciones de arriba.
 
 ---
 
 ## 🎯 Próximos 3 pasos inmediatos recomendados
 
-1. **Contratar/contactar al consultor técnico del rubro** (Épica 10) — es el paso más crítico y el que más se subestima
-2. **Validar Casos de Oro A y B** contra Pladur Calc o Knauf antes de construir la UI encima de fórmulas sin validar
-3. **Arrancar la Fase 2 (API REST)** — es la base que conectará el motor con la web app y los futuros plugins
+1. **Épica 10.1** — Implementar `calcularProyecto()`: es el bloqueador de toda la Fase 2 y su primera tarea es reemplazar la suma manual del Caso C en el test
+2. **Épica 11.1-11.2** — Agregar la tipología "T" al catálogo y calcular el Caso F (3 muros en nodo) — una vez desbloqueada la Épica 10
+3. **Contratar al consultor técnico del rubro** para validar las reglas de casuística de las Épicas 12 (estructura doble) y 14 (empalme) — son las más alejadas de las fórmulas estándar y más dependientes de práctica real de obra

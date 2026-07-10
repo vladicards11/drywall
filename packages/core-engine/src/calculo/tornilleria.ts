@@ -20,46 +20,60 @@ export function calcularTornilleria(
 
   // 3. Anclajes losa
   const separacionAnclajes = catalogo.tornillos.anclaje_losa_separacion_m;
+  const altoMuro = muro.geometria.alto_m;
   let anclajesLosa = 0;
 
-  // Riel superior (techo)
-  const ceilLength = muro.geometria.largo_m;
-  anclajesLosa += roundUpSafe(ceilLength / separacionAnclajes) + 1;
+  // Riel superior (techo) — puede estar interrumpido por pases de altura completa
+  const ceilSegments: { start: number; end: number }[] = [{ start: 0, end: muro.geometria.largo_m }];
 
-  // Riel inferior (piso) - puede estar interrumpido por aberturas
-  // Dividimos el piso en segmentos válidos
-  const segments: { start: number; end: number }[] = [{ start: 0, end: muro.geometria.largo_m }];
+  for (const ab of muro.aberturas) {
+    const esAlturaCompleta = ab.alto_m >= altoMuro - 1e-9;
+    if (esAlturaCompleta && (ab.tipo === "pase" || ab.tipo === "puerta")) {
+      const cutStart = ab.distancia_desde_inicio_m;
+      const cutEnd = cutStart + ab.ancho_m;
+      const tempSegments: { start: number; end: number }[] = [];
+      for (const seg of ceilSegments) {
+        if (cutEnd <= seg.start + 1e-9 || cutStart >= seg.end - 1e-9) {
+          tempSegments.push(seg);
+          continue;
+        }
+        if (cutStart > seg.start + 1e-9) tempSegments.push({ start: seg.start, end: cutStart });
+        if (cutEnd < seg.end - 1e-9) tempSegments.push({ start: cutEnd, end: seg.end });
+      }
+      ceilSegments.length = 0;
+      ceilSegments.push(...tempSegments);
+    }
+  }
+
+  for (const seg of ceilSegments) {
+    const len = seg.end - seg.start;
+    if (len > 1e-9) anclajesLosa += roundUpSafe(len / separacionAnclajes) + 1;
+  }
+
+  // Riel inferior (piso) — interrumpido por puertas y pases
+  const floorSegments: { start: number; end: number }[] = [{ start: 0, end: muro.geometria.largo_m }];
 
   for (const ab of muro.aberturas) {
     if (ab.tipo === "puerta" || ab.tipo === "pase") {
       const cutStart = ab.distancia_desde_inicio_m;
       const cutEnd = cutStart + ab.ancho_m;
-
-      // Cortamos los segmentos existentes
       const tempSegments: { start: number; end: number }[] = [];
-      for (const seg of segments) {
+      for (const seg of floorSegments) {
         if (cutEnd <= seg.start + 1e-9 || cutStart >= seg.end - 1e-9) {
           tempSegments.push(seg);
           continue;
         }
-        if (cutStart > seg.start + 1e-9) {
-          tempSegments.push({ start: seg.start, end: cutStart });
-        }
-        if (cutEnd < seg.end - 1e-9) {
-          tempSegments.push({ start: cutEnd, end: seg.end });
-        }
+        if (cutStart > seg.start + 1e-9) tempSegments.push({ start: seg.start, end: cutStart });
+        if (cutEnd < seg.end - 1e-9) tempSegments.push({ start: cutEnd, end: seg.end });
       }
-      segments.length = 0;
-      segments.push(...tempSegments);
+      floorSegments.length = 0;
+      floorSegments.push(...tempSegments);
     }
   }
 
-  // Calculamos anclajes para cada segmento de piso
-  for (const seg of segments) {
+  for (const seg of floorSegments) {
     const len = seg.end - seg.start;
-    if (len > 1e-9) {
-      anclajesLosa += roundUpSafe(len / separacionAnclajes) + 1;
-    }
+    if (len > 1e-9) anclajesLosa += roundUpSafe(len / separacionAnclajes) + 1;
   }
 
   return {

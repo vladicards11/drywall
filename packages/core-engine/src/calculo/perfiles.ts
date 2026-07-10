@@ -32,17 +32,28 @@ export function calcularPerfiles(
   const montantesTotal = montantesBase + montantesRefuerzoVanos + montantesUnion;
 
   // 5. Calcular rieles
-  const ceilLength = muro.geometria.largo_m;
+  const altoMuro = muro.geometria.alto_m;
+  let ceilLength = muro.geometria.largo_m;
   let floorLength = muro.geometria.largo_m;
   let dintelLength = 0;
 
   for (const ab of muro.aberturas) {
+    const esAlturaCompleta = ab.alto_m >= altoMuro - 1e-9;
+
     if (ab.tipo === "puerta" || ab.tipo === "pase") {
-      // Las aberturas de piso interrumpen el riel inferior
+      // Toda abertura que arranca del piso interrumpe el riel inferior
       floorLength -= ab.ancho_m;
     }
-    // Cada dintel de abertura requiere un riel de refuerzo igual al ancho + 15cm por lado para fijación
-    dintelLength += ab.ancho_m + 0.30;
+
+    if (esAlturaCompleta) {
+      // Vano de altura completa: también interrumpe el riel superior y NO genera dintel
+      // (no hay muro por encima que soportar → no hace falta el riel horizontal de dintel)
+      ceilLength -= ab.ancho_m;
+    } else {
+      // Vano parcial (puerta estándar, ventana): requiere riel de dintel horizontal
+      // ancho del vano + 15cm por lado para fijación (según práctica de obra)
+      dintelLength += ab.ancho_m + 0.30;
+    }
   }
 
   const totalRielLength = ceilLength + floorLength + dintelLength;
