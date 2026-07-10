@@ -1,5 +1,5 @@
 import { PlacaRect } from "@drywall-calc/catalog-schemas";
-import { roundUpSafe, roundFloat } from "../utils/redondeo.js";
+import { roundFloat } from "../utils/redondeo.js";
 
 export interface GenerarGrillaParams {
   largo_m: number;
@@ -25,7 +25,7 @@ export function generarGrillaPlacas(params: GenerarGrillaParams): PlacaRect[] {
   } = params;
 
   const placas: PlacaRect[] = [];
-  const [ancho_placa, alto_placa] = formato_m;
+  const [ancho_placa] = formato_m;
 
   if (orientacion === "vertical") {
     // En vertical, las placas van paradas: el ancho es formato_m[0] y el alto es formato_m[1]

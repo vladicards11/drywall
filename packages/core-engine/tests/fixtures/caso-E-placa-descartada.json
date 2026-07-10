@@ -1,0 +1,30 @@
+{
+  "description": "Caso E — Placa descartada al 100% dentro de una abertura ancha. Ejercita el path de descarte total en aplicarAberturas.ts (ticket 4.2 del backlog).",
+  "input": {
+    "muro": {
+      "id": "muro_E",
+      "geometria": { "largo_m": 3.60, "alto_m": 2.40 },
+      "sistema": {
+        "estructura": "simple",
+        "caras": 2,
+        "capas_por_cara": 1,
+        "perfil": "M48",
+        "riel": "R48",
+        "separacion_montante_m": 0.40
+      },
+      "placa": { "tipo": "ST", "espesor_mm": 12.5, "formato_m": [1.20, 2.40], "orientacion": "vertical" },
+      "aberturas": [
+        { "tipo": "pase", "ancho_m": 2.40, "alto_m": 2.40, "distancia_desde_inicio_m": 0.60 }
+      ],
+      "encuentros": []
+    }
+  },
+  "output_esperado": {
+    "notas": "El muro tiene 3 columnas (0-1.20, 1.20-2.40, 2.40-3.60). La abertura 'pase' ocupa x=[0.60, 3.00], y=[0, 2.40] — toda la altura. La columna 2 (x=[1.20, 2.40]) cae 100% DENTRO de la abertura → se descarta. Las columnas 1 y 3 se recortan parcialmente. Total placas por cara = 2 (no 3).",
+    "placas_por_cara": 2,
+    "placas": {
+      "cantidad_total": 4,
+      "columnas_descartadas_por_cara": 1
+    }
+  }
+}

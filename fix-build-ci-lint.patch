@@ -1,0 +1,46 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index c504b49..55004fb 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -22,6 +22,9 @@ jobs:
+     - name: Install dependencies
+       run: npm install
+ 
++    - name: Build workspace packages
++      run: npm run build
++
+     - name: Run lint
+       run: npm run lint
+ 
+diff --git a/package.json b/package.json
+index a049d03..f90d72f 100644
+--- a/package.json
++++ b/package.json
+@@ -6,6 +6,7 @@
+   ],
+   "scripts": {
+     "build": "npm run build --workspaces --if-present",
++    "pretest": "npm run build --workspaces --if-present",
+     "test": "npm run test --workspaces --if-present",
+     "lint": "npm run lint --workspaces --if-present",
+     "format": "prettier --write \"packages/**/*.ts\""
+diff --git a/packages/core-engine/src/nesting/generarGrillaPlacas.ts b/packages/core-engine/src/nesting/generarGrillaPlacas.ts
+index af35135..9d32c6b 100644
+--- a/packages/core-engine/src/nesting/generarGrillaPlacas.ts
++++ b/packages/core-engine/src/nesting/generarGrillaPlacas.ts
+@@ -1,5 +1,5 @@
+ import { PlacaRect } from "@drywall-calc/catalog-schemas";
+-import { roundUpSafe, roundFloat } from "../utils/redondeo.js";
++import { roundFloat } from "../utils/redondeo.js";
+ 
+ export interface GenerarGrillaParams {
+   largo_m: number;
+@@ -25,7 +25,7 @@ export function generarGrillaPlacas(params: GenerarGrillaParams): PlacaRect[] {
+   } = params;
+ 
+   const placas: PlacaRect[] = [];
+-  const [ancho_placa, alto_placa] = formato_m;
++  const [ancho_placa] = formato_m;
+ 
+   if (orientacion === "vertical") {
+     // En vertical, las placas van paradas: el ancho es formato_m[0] y el alto es formato_m[1]

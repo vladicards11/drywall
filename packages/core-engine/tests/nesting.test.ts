@@ -265,3 +265,79 @@ describe("generarGrillaPlacas tests", () => {
     expect(jC2.map((j) => j.coordenada_fija).sort()).toEqual([0.90, 2.10, 3.30]);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Caso E — Ticket 4.2: columna de placa descartada al 100% dentro de un vano
+// ─────────────────────────────────────────────────────────────────────────────
+describe("Caso E — Descarte total de placa dentro de abertura ancha (ticket 4.2)", () => {
+  it("4.2: Columna que cae 100% dentro del vano es descartada, no marcada como recortada", () => {
+    // Muro 3.60m x 2.40m con pase (abertura de toda la altura) de 2.40m en x=[0.60, 3.00]
+    // Columnas generadas: [0-1.20], [1.20-2.40], [2.40-3.60]
+    // Columna 2 (x=1.20..2.40, y=0..2.40) cae completamente DENTRO del pase [0.60..3.00] x [0..2.40]
+    // → debe ser descartada; solo quedan 2 placas por cara (col 1 y col 3 parciales)
+    const abertura = {
+      tipo: "pase" as const,
+      ancho_m: 2.40,
+      alto_m: 2.40,
+      distancia_desde_inicio_m: 0.60,
+    };
+
+    const placas = generarGrillaPlacas({
+      largo_m: 3.60,
+      alto_m: 2.40,
+      formato_m: [1.20, 2.40],
+      orientacion: "vertical",
+      cara: "A",
+      capa: 1,
+    });
+
+    // Sin aberturas: 3 columnas (3.60 / 1.20 = 3 exactas)
+    expect(placas.length).toBe(3);
+
+    const resultado = aplicarAberturas(placas, [abertura]);
+
+    // La columna 2 (x=1.20, ancho=1.20, y=0, alto=2.40) está completamente dentro del pase [0.60, 3.00] x [0, 2.40]
+    // → se descarta. Quedan solo 2 placas.
+    expect(resultado.length).toBe(2);
+
+    // Ninguna placa restante debe ser la columna central
+    const tieneColumnaDescartada = resultado.some(
+      (p) => Math.abs(p.x - 1.20) < 1e-9 && Math.abs(p.ancho - 1.20) < 1e-9
+    );
+    expect(tieneColumnaDescartada).toBe(false);
+
+    // Las 2 placas restantes deben estar marcadas como recortadas (porque el pase las intersecta parcialmente)
+    expect(resultado.every((p) => p.recortada)).toBe(true);
+  });
+
+  it("4.2b: Placa NO descartada cuando la abertura solo la intersecta parcialmente", () => {
+    // La columna 1 (x=0..1.20) intersecta el pase [0.60..3.00] → solo se recorta, NO se descarta
+    const abertura = {
+      tipo: "pase" as const,
+      ancho_m: 2.40,
+      alto_m: 2.40,
+      distancia_desde_inicio_m: 0.60,
+    };
+
+    const placas = generarGrillaPlacas({
+      largo_m: 3.60,
+      alto_m: 2.40,
+      formato_m: [1.20, 2.40],
+      orientacion: "vertical",
+      cara: "A",
+      capa: 1,
+    });
+
+    const resultado = aplicarAberturas(placas, [abertura]);
+
+    // Columna 1 (x=0..1.20): solo intersecta en [0.60..1.20] → recortada pero presente
+    const col1 = resultado.find((p) => p.x < 1e-9);
+    expect(col1).toBeDefined();
+    expect(col1!.recortada).toBe(true);
+    // Columna 3 (x=2.40..3.60): intersecta en [2.40..3.00] → recortada pero presente
+    const col3 = resultado.find((p) => Math.abs(p.x - 2.40) < 1e-9);
+    expect(col3).toBeDefined();
+    expect(col3!.recortada).toBe(true);
+  });
+});
+
