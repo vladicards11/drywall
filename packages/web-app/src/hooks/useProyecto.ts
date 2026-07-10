@@ -1,9 +1,25 @@
 import { useState, useCallback, useEffect } from 'react';
 import { calcularProyecto } from '@drywall-calc/core-engine';
-import { obtenerCatalogo, obtenerCatalogoGenericoEstandar } from '@drywall-calc/catalog-schemas';
-import type { Muro, Union, ResultadoProyecto, ResultadoMuro, Abertura } from '@drywall-calc/catalog-schemas';
+import { obtenerCatalogo, obtenerCatalogoGenericoEstandar, cargarCatalogo } from '@drywall-calc/catalog-schemas';
+import type { Muro, Union, ResultadoProyecto, ResultadoMuro, Abertura, Catalogo } from '@drywall-calc/catalog-schemas';
 import type { MuroFormData, FormErrors } from './useCalculadora';
 import { DEFAULT_FORM, validateForm } from './useCalculadora';
+
+// ---- Nivel / Piso del proyecto (configuración manual) ----
+/**
+ * Define un nivel arquitectónico del proyecto.
+ * Cuando el IFC no tiene IfcBuildingStorey, los muros se asignan
+ * automáticamente al nivel cuyo rango de elevación los contenga.
+ * El usuario también puede sobreescribir el piso de cada muro individualmente.
+ */
+export interface NivelProyecto {
+  /** Nombre visible del piso, ej: "Planta Baja", "Primer Piso" */
+  nombre: string;
+  /** Elevación de inicio del piso en metros (cota Z inferior) */
+  elevacionInicioM: number;
+  /** Altura libre del piso en metros */
+  alturaM: number;
+}
 
 // ---- Union form data ----
 export interface UnionFormData {
@@ -17,10 +33,17 @@ export interface UnionFormData {
 // ---- Project-level form data ----
 export interface ProyectoFormData {
   nombre: string;
-  catalogo_sistema: string; // 'generico_estandar' | 'gyplac_superboard' | 'tupemesa_precor'
+  catalogo_sistema: string; // 'generico_estandar' | 'gyplac_superboard' | 'tupemesa_precor' | 'custom'
+  catalogo_custom?: Catalogo; // Overrides when using custom catalog editor
   muros: MuroFormData[];
   uniones: UnionFormData[];
   factor_desperdicio_pct: number; // 0–30, default from catalogo
+  /**
+   * Definición manual de los pisos/niveles del proyecto.
+   * Se usa cuando el IFC no tiene IfcBuildingStorey o el proyecto fue creado manualmente.
+   * Cada nivel se define con nombre + elevación de inicio + altura libre.
+   */
+  nivelesProyecto?: NivelProyecto[];
 }
 
 export type ProyectoCalculationState = 'idle' | 'calculating' | 'done' | 'error';
@@ -33,7 +56,9 @@ const DEFAULT_PROYECTO: ProyectoFormData = {
   muros: [{ ...DEFAULT_FORM }],
   uniones: [],
   factor_desperdicio_pct: Math.round(catalogoDefault.factor_desperdicio_placas_default * 100),
+  nivelesProyecto: [], // vacío por defecto — el usuario los configura o vienen del IFC
 };
+
 
 function parseFormato(fmt: string): [number, number] {
   const [w, h] = fmt.split('x').map(Number);
@@ -131,11 +156,15 @@ export function useProyecto() {
   const [proyecto, setProyecto] = useState<ProyectoFormData>(getInitialProyecto);
 
   // Resolvido dinámicamente según el catálogo seleccionado
-  let catalogo;
-  try {
-    catalogo = obtenerCatalogo(proyecto.catalogo_sistema);
-  } catch {
-    catalogo = catalogoDefault;
+  let catalogo: Catalogo;
+  if (proyecto.catalogo_sistema === 'custom' && proyecto.catalogo_custom) {
+    catalogo = proyecto.catalogo_custom;
+  } else {
+    try {
+      catalogo = obtenerCatalogo(proyecto.catalogo_sistema);
+    } catch {
+      catalogo = catalogoDefault;
+    }
   }
   const [historial, setHistorial] = useState<HistorialItem[]>(() => {
     if (typeof window !== 'undefined') {
@@ -241,6 +270,109 @@ export function useProyecto() {
     setState('idle');
   }, []);
 
+  // ---- Importar muros desde IFC ----
+  const importarDesdeIFC = useCallback((
+    murosIFC: import('@drywall-calc/ifc-importer').MuroIFC[],
+    unionesIFC?: import('@drywall-calc/ifc-importer').UnionIFC[]
+  ) => {
+    setProyecto((prev) => {
+      const cat = prev.catalogo_sistema === 'custom' && prev.catalogo_custom
+        ? prev.catalogo_custom
+        : (() => { try { return obtenerCatalogo(prev.catalogo_sistema); } catch { return catalogoDefault; } })();
+
+      // Guardamos la asociación expressId -> ID interno asignado para mapear uniones después
+      const expressIdToMuroIdMap = new Map<number, string>();
+      const offsetIndex = prev.muros.length;
+
+      // Si el proyecto solo tiene el muro vacío por defecto, lo reemplazamos
+      const esSoloPorDefecto =
+        prev.muros.length === 1 &&
+        prev.muros[0].largo_m === DEFAULT_FORM.largo_m &&
+        prev.muros[0].alto_m === DEFAULT_FORM.alto_m &&
+        prev.muros[0].aberturas.length === 0;
+
+      // Convertimos cada MuroIFC al MuroFormData del formulario
+      const nuevosMuros: MuroFormData[] = murosIFC.map((m, idx) => {
+        const aberturas = m.aberturas.map((ab) => ({
+          tipo: ab.tipo as 'puerta' | 'ventana' | 'pase',
+          ancho_m: ab.ancho_m,
+          alto_m: ab.alto_m,
+          posicion_x_m: ab.posicion_x_m,
+          distancia_desde_inicio_m: ab.posicion_x_m, // alias requerido por el tipo Abertura
+        }));
+
+        const perfilDefault = cat.perfiles.montante[0]?.codigo ?? '';
+        const rielDefault = cat.perfiles.riel[0]?.codigo ?? '';
+        const placaDefault = cat.placas[0];
+
+        const targetIdx = esSoloPorDefecto ? idx : offsetIndex + idx;
+        expressIdToMuroIdMap.set(m.expressId, `muro_${targetIdx}`);
+
+        return {
+          ...DEFAULT_FORM,
+          largo_m: m.largo_m.toFixed(2),
+          alto_m: m.alto_m.toFixed(2),
+          perfil: perfilDefault,
+          riel: rielDefault,
+          placa_tipo: placaDefault?.tipo ?? DEFAULT_FORM.placa_tipo,
+          placa_espesor_mm: placaDefault?.espesor_mm ?? DEFAULT_FORM.placa_espesor_mm,
+          placa_formato: placaDefault
+            ? `${placaDefault.formatos_m[0][0]}x${placaDefault.formatos_m[0][1]}`
+            : DEFAULT_FORM.placa_formato,
+          aberturas,
+          // Datos espaciales e IFC
+          storey: m.storey,
+          startX: m.startX,
+          startY: m.startY,
+          endX: m.endX,
+          endY: m.endY,
+          notas: m.advertencias.length > 0 ? m.advertencias.join(' | ') : undefined,
+        };
+      });
+
+      const murosCombinados = esSoloPorDefecto ? nuevosMuros : [...prev.muros, ...nuevosMuros];
+      setErrors(murosCombinados.map((mf) => validateForm(mf)));
+      setSelectedMuroIdx(esSoloPorDefecto ? 0 : prev.muros.length);
+
+      // Mapeamos las uniones detectadas espacialmente
+      const nuevasUniones: UnionFormData[] = [];
+      if (unionesIFC) {
+        unionesIFC.forEach((u) => {
+          const muroAId = expressIdToMuroIdMap.get(u.muros_conectados[0]);
+          const muroBId = expressIdToMuroIdMap.get(u.muros_conectados[1]);
+
+          if (muroAId && muroBId) {
+            // Mapeo de tipología de unión: buscar una que coincida con el tipo ('L' o 'T') en el catálogo
+            const tipoUnionCodigo = catalogo.tipologias_union.find(
+              (t) => u.tipo_union === 'T'
+                ? t.codigo.toLowerCase().includes('t_') || t.codigo.toLowerCase().includes('encuentro')
+                : t.codigo.toLowerCase().includes('esquina')
+            )?.codigo ?? (u.tipo_union === 'T' ? 'encuentro_T_simple' : 'esquina_externa_simple');
+
+            nuevasUniones.push({
+              id: u.id,
+              muro_a: muroAId,
+              muro_b: muroBId,
+              tipo_union: tipoUnionCodigo,
+              angulo_grados: u.angulo_grados,
+            });
+          }
+        });
+      }
+
+      // Si no es por defecto, unimos a las uniones ya existentes
+      const unionesCombinadas = esSoloPorDefecto ? nuevasUniones : [...prev.uniones, ...nuevasUniones];
+
+      return { 
+        ...prev, 
+        muros: murosCombinados,
+        uniones: unionesCombinadas
+      };
+    });
+    setState('idle');
+    setResultado(null);
+  }, []);
+
   // ---- Uniones CRUD ----
   const addUnion = useCallback((union: UnionFormData) => {
     setProyecto((prev) => ({
@@ -308,6 +440,50 @@ export function useProyecto() {
     setState('idle');
     setResultado(null);
   }, []);
+
+  // ---- Modificar Catálogo Personalizado (Custom) ----
+  const updateCustomCatalogo = useCallback((nuevoCatalogo: Catalogo) => {
+    setProyecto((prev) => {
+      // Safe transition if profiles or placas were removed in the edited catalog
+      const newMuros = prev.muros.map((m) => {
+        const hasPerfil = nuevoCatalogo.perfiles.montante.some((p) => p.codigo === m.perfil);
+        const hasRiel = nuevoCatalogo.perfiles.riel.some((r) => r.codigo === m.riel);
+        const hasPlacaTipo = nuevoCatalogo.placas.some((p) => p.tipo === m.placa_tipo);
+
+        return {
+          ...m,
+          perfil: hasPerfil ? m.perfil : nuevoCatalogo.perfiles.montante[0]?.codigo || '',
+          riel: hasRiel ? m.riel : nuevoCatalogo.perfiles.riel[0]?.codigo || '',
+          placa_tipo: hasPlacaTipo ? m.placa_tipo : nuevoCatalogo.placas[0]?.tipo || '',
+          placa_espesor_mm: hasPlacaTipo ? m.placa_espesor_mm : nuevoCatalogo.placas[0]?.espesor_mm || 12.5,
+          placa_formato: hasPlacaTipo ? m.placa_formato : `${nuevoCatalogo.placas[0]?.formatos_m[0][0]}x${nuevoCatalogo.placas[0]?.formatos_m[0][1]}` || '1.20x2.40',
+        };
+      });
+
+      const allowedUnions = new Set(nuevoCatalogo.tipologias_union.map((t) => t.codigo));
+      const newUniones = prev.uniones.filter((u) => allowedUnions.has(u.tipo_union));
+
+      return {
+        ...prev,
+        catalogo_sistema: 'custom',
+        catalogo_custom: nuevoCatalogo,
+        muros: newMuros,
+        uniones: newUniones,
+      };
+    });
+    setState('idle');
+    setResultado(null);
+  }, []);
+
+  const cargarCatalogoExterno = useCallback((datos: unknown) => {
+    try {
+      const parsed = cargarCatalogo(datos);
+      updateCustomCatalogo(parsed);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  }, [updateCustomCatalogo]);
 
   // ---- Factor de desperdicio ----
   const updateFactorDesperdicio = useCallback((pct: number) => {
@@ -449,6 +625,68 @@ export function useProyecto() {
     }
   }, []);
 
+  // ---- CRUD de Niveles del Proyecto ----
+  const addNivel = useCallback((nivel: NivelProyecto) => {
+    setProyecto((prev) => ({
+      ...prev,
+      nivelesProyecto: [...(prev.nivelesProyecto ?? []), nivel],
+    }));
+  }, []);
+
+  const updateNivel = useCallback((idx: number, nivel: Partial<NivelProyecto>) => {
+    setProyecto((prev) => {
+      const niveles = [...(prev.nivelesProyecto ?? [])];
+      if (!niveles[idx]) return prev;
+      niveles[idx] = { ...niveles[idx], ...nivel };
+      return { ...prev, nivelesProyecto: niveles };
+    });
+  }, []);
+
+  const removeNivel = useCallback((idx: number) => {
+    setProyecto((prev) => ({
+      ...prev,
+      nivelesProyecto: (prev.nivelesProyecto ?? []).filter((_, i) => i !== idx),
+    }));
+  }, []);
+
+  /**
+   * Resuelve el nombre del piso para un muro dado usando la cadena de prioridades:
+   * 1. storey del IFC (IfcBuildingStorey) — más preciso
+   * 2. Rango de elevación Z en nivelesProyecto configurados por el usuario
+   * 3. Campo `piso` editado manualmente en el formulario del muro
+   * 4. "Sin Piso Asignado"
+   */
+  const resolvePisoMuro = useCallback((muro: MuroFormData): string => {
+    // Prioridad 1: storey IFC real
+    if (muro.storey) return muro.storey;
+
+    // Prioridad 2: buscar en niveles configurados por elevación Z del muro
+    const niveles = proyecto.nivelesProyecto ?? [];
+    if (niveles.length > 0) {
+      // Usamos startY como proxy de la elevación Z del muro (viene de las coords IFC)
+      const elevMuro = muro.startY ?? null;
+      if (elevMuro !== null) {
+        const nivelMatch = niveles.find((n) => {
+          const desde = n.elevacionInicioM;
+          const hasta = n.elevacionInicioM + n.alturaM;
+          return elevMuro >= desde && elevMuro < hasta;
+        });
+        if (nivelMatch) return nivelMatch.nombre;
+      }
+      // Si no hay coordenada Z pero hay un único nivel con la misma altura, asignarlo
+      const nivelPorAltura = niveles.find(
+        (n) => Math.abs(n.alturaM - parseFloat(muro.alto_m)) < 0.05
+      );
+      if (nivelPorAltura) return nivelPorAltura.nombre;
+    }
+
+    // Prioridad 3: campo piso editado manualmente
+    if (muro.piso && muro.piso.trim()) return muro.piso.trim();
+
+    // Prioridad 4: sin asignación
+    return 'Sin Piso Asignado';
+  }, [proyecto.nivelesProyecto]);
+
   // ---- Helpers derivados ----
   const currentForm = proyecto.muros[selectedMuroIdx] ?? DEFAULT_FORM;
   const currentErrors = errors[selectedMuroIdx] ?? {};
@@ -481,10 +719,13 @@ export function useProyecto() {
     updateMuroField,
     addAbertura,
     removeAbertura,
+    importarDesdeIFC,
     addUnion,
     removeUnion,
     updateNombre,
     updateCatalogoSistema,
+    updateCustomCatalogo,
+    cargarCatalogoExterno,
     updateFactorDesperdicio,
     calcular,
     compartir,
@@ -495,5 +736,11 @@ export function useProyecto() {
     cargarDesdeHistorial,
     eliminarDeHistorial,
     importarProyecto,
+    // Niveles del proyecto
+    addNivel,
+    updateNivel,
+    removeNivel,
+    resolvePisoMuro,
   };
 }
+

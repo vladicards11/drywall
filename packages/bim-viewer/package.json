@@ -1,0 +1,20 @@
+{
+  "name": "@drywall-calc/bim-viewer",
+  "version": "1.0.0",
+  "description": "Visualizador y modelador 3D BIM basado en Three.js y el ecosistema de That Open Company",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "three": "^0.175.0",
+    "@thatopen/components": "^2.3.8",
+    "@thatopen/components-front": "^2.3.8",
+    "@thatopen/fragments": "^2.0.4"
+  },
+  "devDependencies": {
+    "@types/three": "^0.175.0",
+    "typescript": "^5.2.0"
+  }
+}

@@ -18,6 +18,19 @@ export interface MuroFormData {
   placa_formato: string;   // "1.20x2.40"
   placa_orientacion: 'vertical' | 'horizontal';
   aberturas: Abertura[];
+  startX?: number;
+  startY?: number;
+  endX?: number;
+  endY?: number;
+  /** Nombre del piso IFC (IfcBuildingStorey) asignado al importar desde un modelo 3D */
+  storey?: string;
+  /**
+   * Piso asignado manualmente por el usuario (override).
+   * Tiene menor prioridad que `storey` (IFC) pero mayor que la tabla de niveles del proyecto.
+   * Ejemplo: "Planta Baja", "Primer Piso"
+   */
+  piso?: string;
+  notas?: string;
 }
 
 export interface FormErrors {
@@ -44,6 +57,13 @@ export const DEFAULT_FORM: MuroFormData = {
   placa_formato: '1.20x2.40',
   placa_orientacion: 'vertical',
   aberturas: [],
+  startX: undefined,
+  startY: undefined,
+  endX: undefined,
+  endY: undefined,
+  storey: undefined,
+  piso: undefined,
+  notas: undefined,
 };
 
 function parseFormato(fmt: string): [number, number] {

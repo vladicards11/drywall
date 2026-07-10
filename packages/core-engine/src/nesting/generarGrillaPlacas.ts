@@ -10,6 +10,7 @@ export interface GenerarGrillaParams {
   simetrico?: boolean;
   cara: "A" | "B";
   capa: number;
+  anguloEsquina?: number;
 }
 
 export function generarGrillaPlacas(params: GenerarGrillaParams): PlacaRect[] {
@@ -22,6 +23,7 @@ export function generarGrillaPlacas(params: GenerarGrillaParams): PlacaRect[] {
     simetrico = false,
     cara,
     capa,
+    anguloEsquina,
   } = params;
 
   const placas: PlacaRect[] = [];
@@ -50,6 +52,10 @@ export function generarGrillaPlacas(params: GenerarGrillaParams): PlacaRect[] {
         // En vertical, el alto de la placa base es el alto total del muro (o el alto de la placa si fuera menor)
         // Pero las placas se cortan a la altura del muro
         const recortada = width < ancho_placa - 1e-9;
+        
+        // Si toca los extremos del muro, y hay corte angular, marcarla
+        const tocaExtremo = (xStartClamped <= 1e-5) || (xEndClamped >= largo_m - 1e-5);
+        const anguloCorte = (tocaExtremo && anguloEsquina !== undefined && anguloEsquina !== 90) ? anguloEsquina : undefined;
 
         placas.push({
           id: `placa_${cara}_${capa}_${idCounter++}`,
@@ -60,6 +66,7 @@ export function generarGrillaPlacas(params: GenerarGrillaParams): PlacaRect[] {
           cara,
           capa,
           recortada,
+          anguloCorte,
         });
       }
     }
@@ -105,6 +112,9 @@ export function generarGrillaPlacas(params: GenerarGrillaParams): PlacaRect[] {
 
         if (width > 0) {
           const recortada = width < ancho_placa_h - 1e-9 || height < alto_placa_h - 1e-9;
+          
+          const tocaExtremo = (xStartClamped <= 1e-5) || (xEndClamped >= largo_m - 1e-5);
+          const anguloCorte = (tocaExtremo && anguloEsquina !== undefined && anguloEsquina !== 90) ? anguloEsquina : undefined;
 
           placas.push({
             id: `placa_${cara}_${capa}_${idCounter++}`,
@@ -115,6 +125,7 @@ export function generarGrillaPlacas(params: GenerarGrillaParams): PlacaRect[] {
             cara,
             capa,
             recortada,
+            anguloCorte,
           });
         }
       }

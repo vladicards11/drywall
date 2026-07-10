@@ -60,3 +60,44 @@ describe("Caso E — Pase de altura completa alineado a columna (ticket 4.2 + fi
     expect(res.esquineros.ml_total).toBeCloseTo(0);
   });
 });
+
+describe("Uniones con Angulos No Ortogonales (45 y 60 grados) - Épica 26 & 29", () => {
+  it("compensa el largo de rieles según la fórmula de corte a inglete", () => {
+    const uniones = [
+      {
+        id: "u_muro_F_G",
+        muros_conectados: ["muro_F", "muro_G"],
+        tipo_union: "esquina",
+        angulo_grados: 45,
+        config_modulacion: { resetear_perfiles: false, perfiles_simetricos: true }
+      }
+    ];
+
+    const res = calcularMuro(
+      {
+        id: "muro_F",
+        geometria: { largo_m: 3.00, alto_m: 2.40 },
+        sistema: {
+          estructura: "simple",
+          caras: 2,
+          capas_por_cara: 1,
+          perfil: "M89", // Montante 89mm
+          riel: "R90",    // Riel 90mm
+          separacion_montante_m: 0.40,
+        },
+        placa: { tipo: "ST", espesor_mm: 12.5, formato_m: [1.20, 2.40], orientacion: "vertical" },
+        aberturas: [],
+        encuentros: [],
+      },
+      uniones,
+      catalogo
+    );
+
+    // Riel 90mm -> espesor = 0.09m
+    // deltaAngulo = 0.09 / tan(45° / 2) = 0.09 / tan(22.5°) = 0.09 / 0.4142 = ~0.217m de delta por riel
+    // ceilLength = 3.00 + 0.217 = 3.217m
+    // floorLength = 3.00 + 0.217 = 3.217m
+    // totalRielLength = 6.434m -> rielesBarras = ROUNDUP(6.434/3) = 3 barras (sin inglete eran 2 barras)
+    expect(res.perfiles.rieles_barras).toBe(3);
+  });
+});

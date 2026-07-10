@@ -10,10 +10,13 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@drywall-calc/core-engine": "*",
     "@drywall-calc/catalog-schemas": "*",
+    "@drywall-calc/core-engine": "*",
+    "@drywall-calc/ifc-importer": "^1.0.0",
+    "@drywall-calc/bim-viewer": "*",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "web-ifc": "^0.0.77"
   },
   "devDependencies": {
     "@types/node": "^24.13.2",
@@ -26,4 +29,3 @@
     "vitest": "^1.0.0"
   }
 }
-

@@ -18,6 +18,7 @@ interface SidebarProps {
   onCargarDesdeHistorial: (id: string) => void;
   onEliminarDeHistorial: (id: string) => void;
   onImportarProyecto: (datos: ProyectoFormData) => void;
+  onAbrirIfcImporter: () => void;
 
   // Multi-muro project props
   muros: MuroFormData[];
@@ -54,6 +55,34 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
           </div>
         </div>
       </div>
+
+      {/* BIM / IFC import shortcut */}
+      <button
+        id="btn-ifc-importer"
+        onClick={props.onAbrirIfcImporter}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          width: 'calc(100% - 2rem)',
+          margin: '0.5rem 1rem 0',
+          padding: '0.55rem 0.9rem',
+          background: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.10))',
+          border: '1px solid rgba(99,102,241,0.35)',
+          borderRadius: '10px',
+          color: '#818cf8',
+          fontSize: '0.83rem',
+          fontWeight: 700,
+          cursor: 'pointer',
+          transition: 'all 0.15s ease',
+          textAlign: 'left',
+        }}
+        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(99,102,241,0.25)')}
+        onMouseLeave={e => (e.currentTarget.style.background = 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.10))')}
+      >
+        <span>🏗️</span>
+        <span>Importar desde IFC / BIM</span>
+      </button>
 
       <div className={styles.scrollArea}>
         {/* Gestión de Proyecto y backups */}

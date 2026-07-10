@@ -1,0 +1,21 @@
+{
+  "name": "@drywall-calc/ifc-importer",
+  "version": "1.0.0",
+  "description": "Parser IFC (web-ifc/WASM) para extraer muros y aberturas de archivos .ifc",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "web-ifc": "^0.0.57"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.0",
+    "vitest": "^1.6.0"
+  },
+  "peerDependencies": {
+    "@drywall-calc/core-engine": "^1.0.0"
+  }
+}

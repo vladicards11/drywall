@@ -1,0 +1,68 @@
+{
+  "sistema": "tupemesa_precor",
+  "perfiles": {
+    "montante": [
+      { "codigo": "P38_0.45", "ancho_mm": 38, "largo_barra_m": 3.00, "peso_kg_ml": 0.45 },
+      { "codigo": "P64_0.45", "ancho_mm": 64, "largo_barra_m": 3.00, "peso_kg_ml": 0.55 },
+      { "codigo": "P89_0.45", "ancho_mm": 89, "largo_barra_m": 3.00, "peso_kg_ml": 0.68 },
+      { "codigo": "P38_0.90", "ancho_mm": 38, "largo_barra_m": 3.00, "peso_kg_ml": 0.90 },
+      { "codigo": "P64_0.90", "ancho_mm": 64, "largo_barra_m": 3.00, "peso_kg_ml": 1.10 },
+      { "codigo": "P89_0.90", "ancho_mm": 89, "largo_barra_m": 3.00, "peso_kg_ml": 1.35 }
+    ],
+    "riel": [
+      { "codigo": "R38_0.45", "ancho_mm": 38.5, "largo_barra_m": 3.00, "peso_kg_ml": 0.42 },
+      { "codigo": "R64_0.45", "ancho_mm": 64.5, "largo_barra_m": 3.00, "peso_kg_ml": 0.50 },
+      { "codigo": "R89_0.45", "ancho_mm": 89.5, "largo_barra_m": 3.00, "peso_kg_ml": 0.62 },
+      { "codigo": "R38_0.90", "ancho_mm": 38.5, "largo_barra_m": 3.00, "peso_kg_ml": 0.85 },
+      { "codigo": "R64_0.90", "ancho_mm": 64.5, "largo_barra_m": 3.00, "peso_kg_ml": 1.00 },
+      { "codigo": "R89_0.90", "ancho_mm": 89.5, "largo_barra_m": 3.00, "peso_kg_ml": 1.25 }
+    ],
+    "separacion_montante_m_default": 0.407,
+    "separaciones_permitidas_m": [0.407, 0.61]
+  },
+  "placas": [
+    { "tipo": "ST", "nombre": "Gyplac Estandar 12.5mm", "espesor_mm": 12.5, "formatos_m": [[1.22, 2.44], [1.22, 3.00]], "peso_kg_m2": 8.5 },
+    { "tipo": "RH", "nombre": "Gyplac Resistente Humedad 12.5mm", "espesor_mm": 12.5, "formatos_m": [[1.22, 2.44]], "peso_kg_m2": 9.8 },
+    { "tipo": "RF", "nombre": "Gyplac Resistente Fuego 15mm", "espesor_mm": 15.0, "formatos_m": [[1.22, 2.44]], "peso_kg_m2": 11.6 }
+  ],
+  "tornillos": {
+    "placa_perfil_por_m2": { "12.5mm": 25, "15mm": 28 },
+    "perfil_perfil_por_union": 2,
+    "anclaje_losa_separacion_m": 0.50
+  },
+  "cinta": {
+    "rendimiento_ml_por_rollo": 30,
+    "factor_traslape": 1.05,
+    "cantonera_incluida_en_esquinas_externas": true
+  },
+  "masilla": {
+    "kg_por_ml_por_mano": 0.30,
+    "manos_estandar": 3,
+    "presentacion_kg_por_bolsa": 25
+  },
+  "aislante": {
+    "tipos": ["lana_vidrio", "lana_mineral"],
+    "espesores_mm_recomendados_por_ancho_perfil": { "38": 38, "64": 50, "89": 75 },
+    "presentacion_m2_por_paquete": 12
+  },
+  "factor_desperdicio_placas_default": 0.08,
+  "desfase_junta_vertical_min_m": 0.30,
+  "tipologias_union": [
+    {
+      "codigo": "esquina_externa_simple",
+      "descripcion": "Union simple a 90 grados, estructura simple, placa a tope",
+      "n_muros_soportados": 2,
+      "perfiles_adicionales": 1,
+      "tratamiento_placa": "a_tope",
+      "acabado": "esquinero_metalico"
+    },
+    {
+      "codigo": "encuentro_T_simple",
+      "descripcion": "Union en T, estructura simple, placas a tope",
+      "n_muros_soportados": 3,
+      "perfiles_adicionales": 1,
+      "tratamiento_placa": "a_tope",
+      "acabado": "cinta_papel"
+    }
+  ]
+}

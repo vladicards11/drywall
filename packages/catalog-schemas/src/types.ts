@@ -119,6 +119,7 @@ export interface PlacaRect {
   cara: "A" | "B";
   capa: number;
   recortada: boolean;
+  anguloCorte?: number;
 }
 
 export interface JuntaSegmento {

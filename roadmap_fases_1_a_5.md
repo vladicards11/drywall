@@ -181,7 +181,7 @@
 
 ---
 
-## 🟡 FASE 4 — Catálogos de Fabricantes Reales (Perú y LATAM)
+## ✅ FASE 4 — Catálogos de Fabricantes Reales (Perú y LATAM) — COMPLETADA
 
 > **Objetivo**: Soporte para catálogos locales de placas (Gyplac / Superboard de Eternit) y perfiles/estructuras (Tupemesa / Precor) utilizados en Perú y Latinoamérica, con tipologías verificadas.
 
@@ -197,39 +197,48 @@
 - [x] **22.3** Crear `tupemesa_precor.json` validado contra el schema de catálogo, con largos estándar de 3.00 metros
 - [x] **22.4** Tests de regresión de perfiles con catálogo local
 
-### Épica 23 — Selector de catálogo en la web app ✅ 100%
+### Épica 23 — Selector de catálogo en la web app
 - [x] **23.1** Dropdown "Catálogo de Referencia" en el formulario de la web app (Genérico, Gyplac/Eternit, Tupemesa/Precor)
 - [x] **23.2** Actualización dinámica de las opciones de perfil, placa y tipologías al cambiar de catálogo
 - [x] **23.3** Advertencia visual cuando se usa el catálogo "genérico" o combinaciones no estandarizadas de obra
 
-### Épica 24 — Administrador de catálogos (para usuarios avanzados)
-- [ ] **24.1** Pantalla de "editor de catálogo" que permita modificar valores numéricos del catálogo activo
-- [ ] **24.2** Validación en tiempo real de los campos con el schema Zod del catálogo
-- [ ] **24.3** Exportar catálogo personalizado a archivo JSON
-- [ ] **24.4** Importar catálogo desde archivo JSON externo
+### Épica 24 — Administrador de catálogos
+- [x] **24.1** Pantalla de "editor de catálogo" que permita modificar valores numéricos del catálogo activo
+- [x] **24.2** Validación en tiempo real de los campos con el schema Zod del catálogo
+- [x] **24.3** Exportar catálogo personalizado a archivo JSON
+- [x] **24.4** Importar catálogo desde archivo JSON externo
 
 ---
 
-## 🔴 FASE 5 — Integración BIM/IFC y Plugins CAD
+## 🔴 FASE 5 — Integración BIM/IFC y Plugins CAD (En Proceso)
 
 > **Objetivo**: Lectura de planos de arquitectura (IFC, Revit, ArchiCAD) para generar el listado de muros automáticamente y ejecutar el motor de cálculo sobre la planta completa.
->
+
 > **Rol requerido**: Especialista BIM/IFC (ver equipo) — esta fase no puede ser abordada sin alguien con experiencia real en el estándar IFC y las APIs de los softwares CAD.
 
-### Épica 25 — Importador IFC (web-ifc)
-- [ ] **25.1** Integrar `web-ifc` (WASM) en el paquete de importación
-- [ ] **25.2** Parser de `IfcWall` / `IfcWallStandardCase` → extraer `largo_m` y `alto_m` del muro
-- [ ] **25.3** Parser de `IfcOpeningElement` → extraer aberturas (tipo, dimensiones, posición)
-- [ ] **25.4** Parser de `IfcMaterialLayerSet` → mapear capas a sistema constructivo del catálogo
-- [ ] **25.5** Interfaz de importación en la web app: subir archivo `.ifc` y previsualizar los muros detectados
-- [ ] **25.6** Mapper `IfcWall` → `Muro` (con confirmación manual para muros con datos ambiguos)
+### Épica 25 — Importador IFC (web-ifc) ✅ 100%
+- [x] **25.1** Integrar `web-ifc` (WASM) en el paquete de importación (`packages/ifc-importer`)
+- [x] **25.2** Parser de `IfcWall` / `IfcWallStandardCase` → extraer `largo_m` y `alto_m` (semántico + bounding box fallback)
+- [x] **25.3** Parser de `IfcOpeningElement` → extraer aberturas (tipo, dimensiones, posición) vía `IfcRelVoidsElement`
+- [x] **25.4** Parser de `IfcMaterialLayerSet` → (las capas se mapean al sistema constructivo del catálogo activo al importar)
+- [x] **25.5** Interfaz de importación en la web app: modal con dropzone, preview de muros detectados y selección granular
+- [x] **25.6** Mapper `IfcWall` → `MuroFormData` con notas cuando los datos son ambiguos o estimados
 
-### Épica 26 — Resolución de ángulos no ortogonales
-- [ ] **26.1** Detectar muros con encuentros a ángulos distintos de 90° (datos del IFC)
-- [ ] **26.2** Integrar librería de clipping de polígonos (evaluar `polygon-clipping` o `Clipper2-wasm`)
-- [ ] **26.3** Calcular el corte a inglete de perfiles para ángulos no rectos
-- [ ] **26.4** Adaptar el nesting de placas para ángulos no ortogonales (actualmente solo rectángulos alineados a eje)
-- [ ] **26.5** Nuevos Casos de Oro para encuentros a 45° y 60°
+### Épica 25B — Visualizador BIM 3D y Modulación 3D Drywall ✅ 100%
+- [x] **25B.1** Setup del paquete `@drywall-calc/bim-viewer` en el monorepo (Three.js v0.175 + componentes ThatOpen v2.4)
+- [x] **25B.2** Renderizado 3D de alta performance (`BimWorld` con oclusión ambiental SSAO, contornos y grilla infinita)
+- [x] **25B.3** Medición interactiva en caliente (`LengthMeasurement`, `AngleMeasurement` y `AreaMeasurement` con atajos `L`, `A`, `P` y `Esc`)
+- [x] **25B.4** Vistas ortogonales de plano y elevación (`ViewsManager`) y planos de sección interactivos (`Clipper` con doble click)
+- [x] **25B.5** Exportador CAD de planos de despiece SVG a escala con cotas técnicas de modulación y membrete
+- [x] **25B.6** Resalte visual (`Highlighter`) e Inspección sidebar con propiedades IFC y checkboxes de visibilidad (`Hider`)
+- [x] **25B.7** Integración bidireccional: importación de muros desde IFC deduciendo dimensiones mediante bounding box, y maquetado 3D interactivo en caliente de la estructura de parantes, rieles y placas calculados
+
+### Épica 26 — Resolución de ángulos no ortogonales ✅ 100%
+- [x] **26.1** Detectar muros con encuentros a ángulos distintos de 90° (datos del IFC)
+- [x] **26.2** Integrar librería de clipping de polígonos (evaluar `polygon-clipping` o `Clipper2-wasm` e implementar algoritmo de intersección segmentaria)
+- [x] **26.3** Calcular el corte a inglete de perfiles para ángulos no rectos
+- [x] **26.4** Adaptar el nesting de placas para ángulos no ortogonales (marcado y compensación de desperdicio diagonal)
+- [x] **26.5** Nuevos Casos de Oro para encuentros a 45° y 60°
 
 ### Épica 27 — Plugin Revit
 - [ ] **27.1** Crear proyecto C#/.NET con el SDK de la API de Revit
@@ -241,14 +250,14 @@
 ### Épica 28 — Plugin ArchiCAD (Tapir Add-On)
 - [ ] **28.1** Conectar con la API del Add-On Tapir (`tapir_archicad_commands`) para leer muros y aberturas desde ArchiCAD
 - [ ] **28.2** Mapear los comandos de Tapir (`GetWalls`, `GetOpenings`) al modelo de datos de `Muro` y `Abertura`
-- [ ] **28.3** Llamar al motor via API REST e inyectar los resultados en ArchiCAD (schedules de materiales)
+- [ ] **28.3** Llamar al motor via API REST e inyectar los resultados in ArchiCAD (schedules de materiales)
 - [ ] **28.4** Publicar el Add-On en el BIMcloud Marketplace de ArchiCAD
 
-### Épica 29 — Planta completa (múltiples muros desde IFC)
-- [ ] **29.1** Procesar una planta arquitectónica completa desde IFC (múltiples muros con sus uniones)
-- [ ] **29.2** Detectar automáticamente las uniones/encuentros entre muros adyacentes y mapearlos a tipologías del catálogo
-- [ ] **29.3** Vista de planta 2D con todos los muros renderizados y el resultado agregado de todo el proyecto
-- [ ] **29.4** Reporte de materiales por ambiente/zona (agrupar muros por espacio o piso del IFC)
+### Épica 29 — Planta completa (múltiples muros desde IFC) ✅ 100%
+- [x] **29.1** Procesar una planta arquitectónica completa desde IFC (múltiples muros con sus uniones)
+- [x] **29.2** Detectar automáticamente las uniones/encuentros entre muros adyacentes y mapearlos a tipologías del catálogo
+- [x] **29.3** Vista de planta 2D con todos los muros renderizados y el resultado agregado de todo el proyecto
+- [x] **29.4** Reporte de materiales por ambiente/zona (agrupar muros por espacio o piso del IFC)
 
 ---
 
@@ -257,10 +266,10 @@
 | Fase | Descripción | Épicas | Estimación | Estado |
 |---|---|---|---|---|
 | **Fase 1** | MVP Motor de Cálculo | 0–9 | ~28-30 días-persona | ✅ COMPLETADA |
-| **Fase 2** | Proyecto Completo (Motor Maduro) | 10–16 | ~24-26 días-persona | ✅ COMPLETADA |
-| **Fase 3** | Web App Visual | 17–24 | ~30-40 días-persona | ⬜ No iniciada |
-| **Fase 4** | Catálogos fabricantes reales | 25–28 | ~15-20 días-persona | ⬜ No iniciada |
-| **Fase 5** | Integración BIM/IFC + Plugins CAD | 29–37 | ~40-60 días-persona | ⬜ No iniciada |
+| **Fase 2** | Proyecto Completo (Motor M.) | 10–16 | ~24-26 días-persona | ✅ COMPLETADA |
+| **Fase 3** | Web App Visual | 17–20 | ~30-40 días-persona | ✅ COMPLETADA |
+| **Fase 4** | Catálogos fabricantes reales | 21–24 | ~15-20 días-persona | ✅ COMPLETADA |
+| **Fase 5** | Integración BIM/IFC + Plugins | 25–29 | ~40-60 días-persona | [/] EN PROCESO (Visor 3D, Uniones 2D e Importador Planta Completa OK) |
 | **Total** | | | **~140-180 días-persona** | |
 
 > Las estimaciones asumen un desarrollador senior del perfil adecuado para cada fase. Se deben sumar las horas del **consultor técnico del rubro** (validación de fórmulas, especialmente Épicas 12 y 14) y el **especialista BIM/IFC** (Fase 5), que corren en paralelo y no están incluidos en las estimaciones de arriba.
@@ -269,6 +278,6 @@
 
 ## 🎯 Próximos 3 pasos inmediatos recomendados
 
-1. **Épica 15** — Crear el paquete `web-app` utilizando Vite o Next.js y configurar los workspaces de npm para integrarlo con `@drywall-calc/core-engine`.
-2. **Épica 16** — Desarrollar el formulario interactivo para ingresar la geometría, el sistema constructivo, aberturas y uniones de muros.
-3. **Contratar al consultor técnico del rubro** para validar las especificaciones y el listado de materiales consolidados de la Fase 2 contra la práctica real en obra antes del lanzamiento de producción.
+1. **Épicas 27 y 28 (Plugins Revit/ArchiCAD)** — Iniciar el desarrollo del Add-In de Revit en .NET C# y el Add-On de ArchiCAD conectando con los comandos Tapir para permitir la estimación nativa dentro de los entornos de diseño CAD líderes.
+2. **Optimización de Interfaz Multi-muros** ✅ — Mapa interactivo de Planta 2D con canvas HTML (`InteractivePlantaMap`) con hover/click para seleccionar muros, y Desglose por Piso/Zona automático por altura de muro implementados.
+3. **Validación Comercial en Obra** — Coordinar con el consultor técnico del rubro para auditar los resultados de tabiquería no-ortogonal calculada contra los planos de presupuestos reales en proyectos reales.

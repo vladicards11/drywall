@@ -91,6 +91,9 @@ export const HistorialPanel: React.FC<HistorialPanelProps> = ({
           <option value="generico_estandar">Genérico Estándar</option>
           <option value="gyplac_superboard">Gyplac / Superboard (Eternit Perú)</option>
           <option value="tupemesa_precor">Tupemesa / Precor (Perfiles Perú)</option>
+          {proyecto.catalogo_sistema === 'custom' && (
+            <option value="custom">🛠️ Catálogo Personalizado (Modificado)</option>
+          )}
         </select>
         {proyecto.catalogo_sistema === 'generico_estandar' && (
           <span className={styles.warningText}>

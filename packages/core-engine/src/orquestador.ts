@@ -47,6 +47,8 @@ export function calcularMuro(
   const caras: ("A" | "B")[] = muro.sistema.caras === 2 ? ["A", "B"] : ["A"];
 
   const simetrico = unionesDelMuro.some((u) => u.config_modulacion.perfiles_simetricos === true);
+  const unionNoOrtogonal = unionesDelMuro.find((u) => u.angulo_grados !== 90 && u.angulo_grados > 0);
+  const anguloEsquina = unionNoOrtogonal ? unionNoOrtogonal.angulo_grados : undefined;
 
   for (const cara of caras) {
     for (let capa = 1; capa <= muro.sistema.capas_por_cara; capa++) {
@@ -62,6 +64,7 @@ export function calcularMuro(
         simetrico,
         cara,
         capa,
+        anguloEsquina,
       });
 
       const placasRecortadas = aplicarAberturas(basePlacas, muro.aberturas);
