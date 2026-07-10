@@ -111,9 +111,9 @@
 - [x] **15.2** `calcularProyecto` agrega un desglose de resultados por ambiente además del total del proyecto. `ResultadoProyecto.por_ambiente` existe y suma exactamente al total general.
 
 ### Épica 16 — Exportación a Excel/PDF
-- [ ] **16.1** Spike de decisión de librería: evaluar `exceljs` para Excel y `pdf-lib` o HTML→PDF para el informe. Documentar elección y justificación (0.5d, no implementación)
-- [ ] **16.2** Exportador de `ResultadoProyecto` a Excel: hoja de resumen de materiales + hoja de detalle por muro. El archivo generado abre sin errores en Excel/LibreOffice y los totales coinciden con el resultado de origen.
-- [ ] **16.3** Exportador a PDF con el mismo contenido formateado como presupuesto/lista de materiales. Las cifras del PDF coinciden exactamente con el Excel, sin discrepancias.
+- [x] **16.1** Spike de decisión de librería: evaluar `exceljs` para Excel y `pdf-lib` o HTML→PDF para el informe. Documentar elección y justificación (0.5d, no implementación)
+- [x] **16.2** Exportador de `ResultadoProyecto` a Excel: hoja de resumen de materiales + hoja de detalle por muro. El archivo generado abre sin errores en Excel/LibreOffice y los totales coinciden con el resultado de origen.
+- [x] **16.3** Exportador a PDF con el mismo contenido formateado como presupuesto/lista de materiales. Las cifras del PDF coinciden exactamente con el Excel, sin discrepancias.
 
 > **Dependencias de Fase 2:**
 > ```
@@ -256,7 +256,7 @@
 | Fase | Descripción | Épicas | Estimación | Estado |
 |---|---|---|---|---|
 | **Fase 1** | MVP Motor de Cálculo | 0–9 | ~28-30 días-persona | ✅ COMPLETADA |
-| **Fase 2** | Proyecto Completo (Motor Maduro) | 10–16 | ~24-26 días-persona | ⬜ En progreso |
+| **Fase 2** | Proyecto Completo (Motor Maduro) | 10–16 | ~24-26 días-persona | ✅ COMPLETADA |
 | **Fase 3** | Web App Visual | 17–24 | ~30-40 días-persona | ⬜ No iniciada |
 | **Fase 4** | Catálogos fabricantes reales | 25–28 | ~15-20 días-persona | ⬜ No iniciada |
 | **Fase 5** | Integración BIM/IFC + Plugins CAD | 29–37 | ~40-60 días-persona | ⬜ No iniciada |
@@ -268,7 +268,6 @@
 
 ## 🎯 Próximos 3 pasos inmediatos recomendados
 
-1. **Épica 16** — Implementar exportación a Excel/PDF (Spike y desarrollo del reporte consolidado de presupuesto)
-2. **Contratar al consultor técnico del rubro** para validar las reglas de casuística de las Épicas 12 (estructura doble) y 14 (empalme) — son las que más dependen de práctica real de obra
-3. **Fase 3** — Setup e inicio del desarrollo de la Web App (Interface Visual) para la visualización interactiva del proyecto
-
+1. **Épica 15** — Crear el paquete `web-app` utilizando Vite o Next.js y configurar los workspaces de npm para integrarlo con `@drywall-calc/core-engine`.
+2. **Épica 16** — Desarrollar el formulario interactivo para ingresar la geometría, el sistema constructivo, aberturas y uniones de muros.
+3. **Contratar al consultor técnico del rubro** para validar las especificaciones y el listado de materiales consolidados de la Fase 2 contra la práctica real en obra antes del lanzamiento de producción.

@@ -9,9 +9,12 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@drywall-calc/catalog-schemas": "*"
+    "@drywall-calc/catalog-schemas": "*",
+    "exceljs": "^4.4.0",
+    "pdfmake": "^0.3.11"
   },
   "devDependencies": {
+    "@types/pdfmake": "^0.3.3",
     "vitest": "^1.0.0"
   }
 }
