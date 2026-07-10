@@ -1,0 +1,40 @@
+{
+  "input": {
+    "muros": [
+      {
+        "id": "muro_C1",
+        "geometria": { "largo_m": 3.00, "alto_m": 2.40 },
+        "sistema": { "estructura": "simple", "caras": 2, "capas_por_cara": 1, "perfil": "M48", "riel": "R48", "separacion_montante_m": 0.40 },
+        "placa": { "tipo": "ST", "espesor_mm": 12.5, "formato_m": [1.20, 2.40], "orientacion": "vertical" },
+        "aberturas": [],
+        "encuentros": ["union_C"]
+      },
+      {
+        "id": "muro_C2",
+        "geometria": { "largo_m": 2.50, "alto_m": 2.40 },
+        "sistema": { "estructura": "simple", "caras": 2, "capas_por_cara": 1, "perfil": "M48", "riel": "R48", "separacion_montante_m": 0.40 },
+        "placa": { "tipo": "ST", "espesor_mm": 12.5, "formato_m": [1.20, 2.40], "orientacion": "vertical" },
+        "aberturas": [],
+        "encuentros": ["union_C"]
+      }
+    ],
+    "uniones": [
+      {
+        "id": "union_C",
+        "muros_conectados": ["muro_C1", "muro_C2"],
+        "angulo_grados": 90,
+        "tipo_union": "esquina_externa_simple",
+        "config_modulacion": { "resetear_perfiles": true, "perfiles_simetricos": false }
+      }
+    ]
+  },
+  "output_esperado": {
+    "placas": { "cantidad_total": 12 },
+    "perfiles": { "montantes": 18, "rieles_barras": 4, "montantes_refuerzo_vanos": 0, "montantes_union": 1 },
+    "tornillos": { "placa_perfil": 660, "perfil_perfil": 72, "anclajes_losa": 26 },
+    "cinta": { "ml_total": 20.16, "rollos": 1 },
+    "masilla": { "kg_total": 17.28, "bolsas": 1 },
+    "aislante": { "m2": 13.20, "paquetes": 2 },
+    "esquineros": { "ml_total": 2.40 }
+  }
+}

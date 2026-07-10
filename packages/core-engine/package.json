@@ -1,0 +1,17 @@
+{
+  "name": "@drywall-calc/core-engine",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@drywall-calc/catalog-schemas": "*"
+  },
+  "devDependencies": {
+    "vitest": "^1.0.0"
+  }
+}

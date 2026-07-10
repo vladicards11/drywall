@@ -1,0 +1,6 @@
+node_modules/
+dist/
+coverage/
+.gemini/
+.DS_Store
+*.log

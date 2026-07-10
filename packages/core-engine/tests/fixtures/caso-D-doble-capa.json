@@ -1,0 +1,21 @@
+{
+  "input": {
+    "muro": {
+      "id": "muro_D",
+      "geometria": { "largo_m": 3.60, "alto_m": 2.40 },
+      "sistema": { "estructura": "simple", "caras": 2, "capas_por_cara": 2, "perfil": "M48", "riel": "R48", "separacion_montante_m": 0.40 },
+      "placa": { "tipo": "ST", "espesor_mm": 12.5, "formato_m": [1.20, 2.40], "orientacion": "vertical" },
+      "aberturas": [],
+      "encuentros": []
+    }
+  },
+  "output_esperado": {
+    "placas": { "cantidad_total": 14 },
+    "perfiles": { "montantes": 10, "rieles_barras": 3, "montantes_refuerzo_vanos": 0 },
+    "tornillos": { "placa_perfil": 864, "perfil_perfil": 40, "anclajes_losa": 18 },
+    "cinta": { "ml_total": 25.20, "rollos": 1 },
+    "masilla": { "kg_total": 21.60, "bolsas": 1 },
+    "aislante": { "m2": 8.64, "paquetes": 1 },
+    "esquineros": { "ml_total": 0 }
+  }
+}

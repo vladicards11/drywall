@@ -1,0 +1,23 @@
+{
+  "input": {
+    "muro": {
+      "id": "muro_B",
+      "geometria": { "largo_m": 4.20, "alto_m": 2.60 },
+      "sistema": { "estructura": "simple", "caras": 2, "capas_por_cara": 1, "perfil": "M48", "riel": "R48", "separacion_montante_m": 0.40 },
+      "placa": { "tipo": "ST", "espesor_mm": 12.5, "formato_m": [1.20, 3.00], "orientacion": "vertical" },
+      "aberturas": [
+        { "tipo": "puerta", "ancho_m": 0.90, "alto_m": 2.10, "distancia_desde_inicio_m": 1.00 }
+      ],
+      "encuentros": []
+    }
+  },
+  "output_esperado": {
+    "placas": { "cantidad_total": 8 },
+    "perfiles": { "montantes": 14, "rieles_barras": 3, "montantes_refuerzo_vanos": 2 },
+    "tornillos": { "placa_perfil": 452, "perfil_perfil": 56, "anclajes_losa": 19 },
+    "cinta": { "ml_total": 11.97, "rollos": 1 },
+    "masilla": { "kg_total": 10.26, "bolsas": 1 },
+    "aislante": { "m2": 9.03, "paquetes": 1 },
+    "esquineros": { "ml_total": 0 }
+  }
+}

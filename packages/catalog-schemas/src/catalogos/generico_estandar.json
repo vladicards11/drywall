@@ -1,0 +1,64 @@
+{
+  "sistema": "generico_estandar",
+  "perfiles": {
+    "montante": [
+      { "codigo": "M35", "ancho_mm": 35, "largo_barra_m": 3.00, "peso_kg_ml": 0.45 },
+      { "codigo": "M48", "ancho_mm": 48, "largo_barra_m": 3.00, "peso_kg_ml": 0.52 },
+      { "codigo": "M70", "ancho_mm": 70, "largo_barra_m": 3.00, "peso_kg_ml": 0.68 },
+      { "codigo": "M90", "ancho_mm": 90, "largo_barra_m": 3.00, "peso_kg_ml": 0.81 }
+    ],
+    "riel": [
+      { "codigo": "R35", "ancho_mm": 35, "largo_barra_m": 3.00, "peso_kg_ml": 0.42 },
+      { "codigo": "R48", "ancho_mm": 48, "largo_barra_m": 3.00, "peso_kg_ml": 0.49 },
+      { "codigo": "R70", "ancho_mm": 70, "largo_barra_m": 3.00, "peso_kg_ml": 0.63 },
+      { "codigo": "R90", "ancho_mm": 90, "largo_barra_m": 3.00, "peso_kg_ml": 0.75 }
+    ],
+    "separacion_montante_m_default": 0.40,
+    "separaciones_permitidas_m": [0.40, 0.41, 0.60]
+  },
+  "placas": [
+    { "tipo": "ST", "nombre": "Estandar", "espesor_mm": 12.5, "formatos_m": [[1.20, 2.40], [1.20, 3.00], [1.20, 2.60]], "peso_kg_m2": 9.5 },
+    { "tipo": "RH", "nombre": "Resistente humedad", "espesor_mm": 12.5, "formatos_m": [[1.20, 2.40], [1.20, 3.00]], "peso_kg_m2": 9.8 },
+    { "tipo": "RF", "nombre": "Resistente fuego", "espesor_mm": 15.0, "formatos_m": [[1.20, 2.40], [1.20, 3.00]], "peso_kg_m2": 11.6 }
+  ],
+  "tornillos": {
+    "placa_perfil_por_m2": { "9.5mm": 22, "12.5mm": 25, "15mm": 28 },
+    "perfil_perfil_por_union": 2,
+    "anclaje_losa_separacion_m": 0.50
+  },
+  "cinta": {
+    "rendimiento_ml_por_rollo": 30,
+    "factor_traslape": 1.05,
+    "cantonera_incluida_en_esquinas_externas": true
+  },
+  "masilla": {
+    "kg_por_ml_por_mano": 0.30,
+    "manos_estandar": 3,
+    "presentacion_kg_por_bolsa": 25
+  },
+  "aislante": {
+    "tipos": ["lana_vidrio", "lana_mineral", "poliester"],
+    "espesores_mm_recomendados_por_ancho_perfil": { "35": 35, "48": 50, "70": 70, "90": 90 },
+    "presentacion_m2_por_paquete": 12
+  },
+  "factor_desperdicio_placas_default": 0.08,
+  "desfase_junta_vertical_min_m": 0.30,
+  "tipologias_union": [
+    {
+      "codigo": "esquina_externa_simple",
+      "descripcion": "Union simple a 90 grados, estructura simple, placa a tope",
+      "n_muros_soportados": 2,
+      "perfiles_adicionales": 1,
+      "tratamiento_placa": "a_tope",
+      "acabado": "esquinero_metalico"
+    },
+    {
+      "codigo": "1.3-2",
+      "descripcion": "Union en T, estructura doble, placa envolvente en una de las caras",
+      "n_muros_soportados": 3,
+      "perfiles_adicionales": 2,
+      "tratamiento_placa": "envolvente",
+      "acabado": "esquinero_metalico"
+    }
+  ]
+}
