@@ -211,6 +211,95 @@ Nota: se eligió formato de placa 1.20x3.00 (en vez de 2.40) a propósito — de
 
 ---
 
+## Caso F — Encuentro en T con 3 muros
+
+**Input**
+```json
+{
+  "proyecto": "Caso F - Encuentro en T",
+  "catalogo": "generico_estandar",
+  "elementos": [
+    {
+      "id": "muro_F1",
+      "geometria": { "largo_m": 3.00, "alto_m": 2.40 },
+      "sistema": { "estructura": "simple", "caras": 2, "capas_por_cara": 1, "perfil": "M48", "riel": "R48", "separacion_montante_m": 0.40 },
+      "placa": { "tipo": "ST", "espesor_mm": 12.5, "formato_m": [1.20, 2.40], "orientacion": "vertical" },
+      "aberturas": [],
+      "encuentros": ["union_F"]
+    },
+    {
+      "id": "muro_F2",
+      "geometria": { "largo_m": 2.50, "alto_m": 2.40 },
+      "sistema": { "estructura": "simple", "caras": 2, "capas_por_cara": 1, "perfil": "M48", "riel": "R48", "separacion_montante_m": 0.40 },
+      "placa": { "tipo": "ST", "espesor_mm": 12.5, "formato_m": [1.20, 2.40], "orientacion": "vertical" },
+      "aberturas": [],
+      "encuentros": ["union_F"]
+    },
+    {
+      "id": "muro_F3",
+      "geometria": { "largo_m": 2.00, "alto_m": 2.40 },
+      "sistema": { "estructura": "simple", "caras": 2, "capas_por_cara": 1, "perfil": "M48", "riel": "R48", "separacion_montante_m": 0.40 },
+      "placa": { "tipo": "ST", "espesor_mm": 12.5, "formato_m": [1.20, 2.40], "orientacion": "vertical" },
+      "aberturas": [],
+      "encuentros": ["union_F"]
+    }
+  ],
+  "uniones": [
+    {
+      "id": "union_F",
+      "muros_conectados": ["muro_F1", "muro_F2", "muro_F3"],
+      "angulo_grados": 90,
+      "tipo_union": "encuentro_T_simple",
+      "config_modulacion": { "resetear_perfiles": true, "perfiles_simetricos": false }
+    }
+  ]
+}
+```
+
+**Derivación clave**
+- **Placas**:
+  - F1: 3 columnas x 2 caras = 6 placas
+  - F2: 3 columnas x 2 caras = 6 placas
+  - F3: 2 columnas x 2 caras = 4 placas
+  - Total placas = 16
+- **Montantes**:
+  - F1 (primero alfabéticamente): 9 base + 1 unión = 10 montantes
+  - F2: 8 base + 0 unión = 8 montantes
+  - F3: 6 base + 0 unión = 6 montantes
+  - Total montantes = 24
+- **Rieles**:
+  - F1: ceil 3.00 + floor 3.00 = 6.00m → 2 barras de 3m
+  - F2: ceil 2.50 + floor 2.50 = 5.00m → 2 barras de 3m
+  - F3: ceil 2.00 + floor 2.00 = 4.00m → 2 barras de 3m
+  - Total rieles = 6 barras
+- **Juntas**:
+  - F1: 2 juntas x 2.40m x 2 caras = 9.60 ml. Con traslape (1.05) = 10.08 ml
+  - F2: 2 juntas x 2.40m x 2 caras = 9.60 ml. Con traslape (1.05) = 10.08 ml
+  - F3: 1 junta x 2.40m x 2 caras = 4.80 ml. Con traslape (1.05) = 5.04 ml
+  - Total joints ml = 24.00 ml. Con traslape = 25.20 ml → 1 rollo
+- **Masilla**: 24.00 ml x 0.3 x 3 = 21.60 kg → 1 bolsa
+- **Aislante**: area neta total = 7.20 + 6.00 + 4.80 = 18.00 m² → 2 paquetes
+- **Tornillos**:
+  - Placa-perfil: 18.00 m² x 2 caras x 1 capa x 25/m² = 900
+  - Perfil-perfil: 24 montantes x 2 x 2 = 96
+  - Anclajes losa: F1 (14) + F2 (12) + F3 (10) = 36
+- **Esquineros**: 0 (acabado es cinta_papel para encuentro_T_simple)
+
+**Output esperado**
+```json
+{
+  "placas": { "cantidad_total": 16 },
+  "perfiles": { "montantes": 24, "rieles_barras": 6, "montantes_refuerzo_vanos": 0, "montantes_union": 1 },
+  "tornillos": { "placa_perfil": 900, "perfil_perfil": 96, "anclajes_losa": 36 },
+  "cinta": { "ml_total": 25.20, "rollos": 1 },
+  "masilla": { "kg_total": 21.60, "bolsas": 1 },
+  "aislante": { "m2": 18.00, "paquetes": 2 },
+  "esquineros": { "ml_total": 0 }
+}
+```
+
+---
+
 ## Casos pendientes de agregar (no calculados todavía)
 
 Estos quedan identificados para sumar al banco a medida que se programen las funciones correspondientes — no bloquean el arranque del desarrollo de los Casos A-D, pero conviene no perderlos de vista:
@@ -222,6 +311,3 @@ Estos quedan identificados para sumar al banco a medida que se programen las fun
 - **Cielorraso suspendido**: sistema de perfiles completamente distinto (maestras, perfiles F47), primer caso de un tipo de elemento que no es "muro".
 - **Reuso de offcuts** (Fase 4): mismo Caso B, pero verificando si el recorte de la columna 0 (con vano) puede reutilizarse en otra parte del mismo muro antes de contarlo como desperdicio.
 
-## Próximo paso
-
-Con este banco, el orden natural para programar (siguiendo el desglose de funciones de `diseno-motor-nesting-catalogo-generico.md`, sección 5) es: `generarGrillaPlacas` validado contra el Caso A → `aplicarAberturas` contra el Caso B → lógica de uniones contra el Caso C → capas con desfase contra el Caso D.

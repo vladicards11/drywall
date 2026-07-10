@@ -78,7 +78,7 @@ export function calcularMuro(
   const areaNeta = roundFloat(areaBruta - areaAberturas);
 
   const perfiles = calcularPerfiles(muro, unionesDelMuro, catalogo);
-  const tornillos = calcularTornilleria(muro, areaNeta, perfiles, catalogo);
+  const tornillos = calcularTornilleria(muro, areaNeta, perfiles, catalogo, unionesDelMuro);
   const cintaMasilla = calcularCintaMasilla(juntas, catalogo);
   const aislante = calcularAislante(areaNeta, catalogo);
   const esquineros = calcularEsquineros(unionesDelMuro, muro, catalogo);

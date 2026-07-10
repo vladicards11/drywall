@@ -59,6 +59,14 @@
       "perfiles_adicionales": 2,
       "tratamiento_placa": "envolvente",
       "acabado": "esquinero_metalico"
+    },
+    {
+      "codigo": "encuentro_T_simple",
+      "descripcion": "Union en T, estructura simple, placas a tope",
+      "n_muros_soportados": 3,
+      "perfiles_adicionales": 1,
+      "tratamiento_placa": "a_tope",
+      "acabado": "cinta_papel"
     }
   ]
 }

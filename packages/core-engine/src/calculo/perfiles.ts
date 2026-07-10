@@ -56,6 +56,21 @@ export function calcularPerfiles(
     }
   }
 
+  // Corrección por ángulo no ortogonal (corte a inglete en uniones)
+  const anchoPerfilM = rielConfig ? rielConfig.ancho_mm / 1000 : 0.048;
+  let deltaAngulo = 0;
+  for (const union of unionesDelMuro) {
+    if (union.angulo_grados !== 90 && union.angulo_grados > 0) {
+      const alphaRad = (union.angulo_grados * Math.PI) / 180;
+      deltaAngulo += anchoPerfilM / Math.tan(alphaRad / 2);
+    }
+  }
+
+  ceilLength += deltaAngulo;
+  if (floorLength > 1e-9) {
+    floorLength += deltaAngulo;
+  }
+
   const totalRielLength = ceilLength + floorLength + dintelLength;
   const rielesBarras = roundUpSafe(totalRielLength / largoBarraRiel);
 

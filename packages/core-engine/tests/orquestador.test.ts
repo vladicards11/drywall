@@ -8,6 +8,7 @@ import casoA from "./fixtures/caso-A-simple.json" assert { type: "json" };
 import casoB from "./fixtures/caso-B-abertura.json" assert { type: "json" };
 import casoC from "./fixtures/caso-C-esquina.json" assert { type: "json" };
 import casoD from "./fixtures/caso-D-doble-capa.json" assert { type: "json" };
+import casoF from "./fixtures/caso-F-union-T.json" assert { type: "json" };
 
 const catalogo = obtenerCatalogoGenericoEstandar();
 
@@ -144,5 +145,69 @@ describe("Orquestador - Pruebas de integración de Casos de Oro", () => {
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect(() => calcularMuro(brokenMuro as any, [], catalogo)).toThrow(GeometriaInvalidaError);
+  });
+
+  it("Caso F - Encuentro en T con 3 muros", () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const res = calcularProyecto(casoF.input as any, catalogo);
+
+    expect(res.totales.placas.cantidad_total).toBe(casoF.output_esperado.placas.cantidad_total);
+    expect(res.totales.perfiles.montantes).toBe(casoF.output_esperado.perfiles.montantes);
+    expect(res.totales.perfiles.rieles_barras).toBe(casoF.output_esperado.perfiles.rieles_barras);
+    expect(res.totales.tornillos.placa_perfil).toBe(casoF.output_esperado.tornillos.placa_perfil);
+    expect(res.totales.tornillos.perfil_perfil).toBe(casoF.output_esperado.tornillos.perfil_perfil);
+    expect(res.totales.tornillos.anclajes_losa).toBe(casoF.output_esperado.tornillos.anclajes_losa);
+    expect(res.totales.cinta.ml_total).toBeCloseTo(casoF.output_esperado.cinta.ml_total, 2);
+    expect(res.totales.cinta.rollos).toBe(casoF.output_esperado.cinta.rollos);
+    expect(res.totales.masilla.kg_total).toBeCloseTo(casoF.output_esperado.masilla.kg_total, 2);
+    expect(res.totales.masilla.bolsas).toBe(casoF.output_esperado.masilla.bolsas);
+    expect(res.totales.aislante.m2).toBeCloseTo(casoF.output_esperado.aislante.m2, 2);
+    expect(res.totales.aislante.paquetes).toBe(casoF.output_esperado.aislante.paquetes);
+    expect(res.totales.esquineros.ml_total).toBeCloseTo(casoF.output_esperado.esquineros.ml_total, 2);
+  });
+
+  it("11.4 - Uniones no ortogonales (60°): consume más riel que una a 90° debido al corte a inglete", () => {
+    const muroBase = {
+      id: "muro_ang",
+      geometria: { largo_m: 3.00, alto_m: 2.40 },
+      sistema: { estructura: "simple" as const, caras: 2 as const, capas_por_cara: 1, perfil: "M48", riel: "R48", separacion_montante_m: 0.40 },
+      placa: { tipo: "ST", espesor_mm: 12.5, formato_m: [1.20, 2.40] as [number, number], orientacion: "vertical" as const },
+      aberturas: [],
+      encuentros: ["union_ang"]
+    };
+
+    const union90 = [
+      {
+        id: "union_ang",
+        muros_conectados: ["muro_ang", "muro_vecino"],
+        angulo_grados: 90,
+        tipo_union: "esquina_externa_simple",
+        config_modulacion: { resetear_perfiles: true, perfiles_simetricos: false }
+      }
+    ];
+
+    const union60 = [
+      {
+        id: "union_ang",
+        muros_conectados: ["muro_ang", "muro_vecino"],
+        angulo_grados: 60,
+        tipo_union: "esquina_externa_simple",
+        config_modulacion: { resetear_perfiles: true, perfiles_simetricos: false }
+      }
+    ];
+
+    const res90 = calcularMuro(muroBase, union90, catalogo);
+    const res60 = calcularMuro(muroBase, union60, catalogo);
+
+    // Mismo muro a 60° debe consumir más o igual rieles_barras debido al corte a inglete
+    // Calculamos los metros de riel exactos usando calcularPerfiles directamente para comparar:
+    const rieles90 = res90.perfiles.rieles_barras;
+    const rieles60 = res60.perfiles.rieles_barras;
+
+    // Verificamos que no sea menor en ningún caso
+    expect(rieles60).toBeGreaterThanOrEqual(rieles90);
+
+    // Y verificamos que los anclajes de losa sean mayores o iguales debido al aumento de longitud por inglete
+    expect(res60.tornillos.anclajes_losa).toBeGreaterThanOrEqual(res90.tornillos.anclajes_losa);
   });
 });

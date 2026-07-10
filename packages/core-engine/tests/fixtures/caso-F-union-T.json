@@ -1,0 +1,50 @@
+{
+  "input": {
+    "proyecto": "Caso F - Encuentro en T",
+    "catalogo": "generico_estandar",
+    "elementos": [
+      {
+        "id": "muro_F1",
+        "geometria": { "largo_m": 3.00, "alto_m": 2.40 },
+        "sistema": { "estructura": "simple", "caras": 2, "capas_por_cara": 1, "perfil": "M48", "riel": "R48", "separacion_montante_m": 0.40 },
+        "placa": { "tipo": "ST", "espesor_mm": 12.5, "formato_m": [1.20, 2.40], "orientacion": "vertical" },
+        "aberturas": [],
+        "encuentros": ["union_F"]
+      },
+      {
+        "id": "muro_F2",
+        "geometria": { "largo_m": 2.50, "alto_m": 2.40 },
+        "sistema": { "estructura": "simple", "caras": 2, "capas_por_cara": 1, "perfil": "M48", "riel": "R48", "separacion_montante_m": 0.40 },
+        "placa": { "tipo": "ST", "espesor_mm": 12.5, "formato_m": [1.20, 2.40], "orientacion": "vertical" },
+        "aberturas": [],
+        "encuentros": ["union_F"]
+      },
+      {
+        "id": "muro_F3",
+        "geometria": { "largo_m": 2.00, "alto_m": 2.40 },
+        "sistema": { "estructura": "simple", "caras": 2, "capas_por_cara": 1, "perfil": "M48", "riel": "R48", "separacion_montante_m": 0.40 },
+        "placa": { "tipo": "ST", "espesor_mm": 12.5, "formato_m": [1.20, 2.40], "orientacion": "vertical" },
+        "aberturas": [],
+        "encuentros": ["union_F"]
+      }
+    ],
+    "uniones": [
+      {
+        "id": "union_F",
+        "muros_conectados": ["muro_F1", "muro_F2", "muro_F3"],
+        "angulo_grados": 90,
+        "tipo_union": "encuentro_T_simple",
+        "config_modulacion": { "resetear_perfiles": true, "perfiles_simetricos": false }
+      }
+    ]
+  },
+  "output_esperado": {
+    "placas": { "cantidad_total": 16 },
+    "perfiles": { "montantes": 24, "rieles_barras": 6, "montantes_refuerzo_vanos": 0, "montantes_union": 1 },
+    "tornillos": { "placa_perfil": 900, "perfil_perfil": 96, "anclajes_losa": 36 },
+    "cinta": { "ml_total": 25.20, "rollos": 1 },
+    "masilla": { "kg_total": 21.60, "bolsas": 1 },
+    "aislante": { "m2": 18.00, "paquetes": 2 },
+    "esquineros": { "ml_total": 0 }
+  }
+}

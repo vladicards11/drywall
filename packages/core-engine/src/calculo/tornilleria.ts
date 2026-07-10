@@ -1,11 +1,12 @@
-import { Muro, Catalogo, ResultadoPerfiles, ResultadoTornillos } from "@drywall-calc/catalog-schemas";
+import { Muro, Union, Catalogo, ResultadoPerfiles, ResultadoTornillos } from "@drywall-calc/catalog-schemas";
 import { roundUpSafe } from "../utils/redondeo.js";
 
 export function calcularTornilleria(
   muro: Muro,
   areaNetaM2: number,
   resultadoPerfiles: ResultadoPerfiles,
-  catalogo: Catalogo
+  catalogo: Catalogo,
+  unionesDelMuro: Union[] = []
 ): ResultadoTornillos {
   // 1. Tornillos placa-perfil
   const espesorKey = `${muro.placa.espesor_mm}mm`;
@@ -23,8 +24,19 @@ export function calcularTornilleria(
   const altoMuro = muro.geometria.alto_m;
   let anclajesLosa = 0;
 
+  // Corrección por ángulo no ortogonal (corte a inglete en uniones)
+  const rielConfig = catalogo.perfiles.riel.find((r) => r.codigo === muro.sistema.riel);
+  const anchoPerfilM = rielConfig ? rielConfig.ancho_mm / 1000 : 0.048;
+  let deltaAngulo = 0;
+  for (const union of unionesDelMuro) {
+    if (union.angulo_grados !== 90 && union.angulo_grados > 0) {
+      const alphaRad = (union.angulo_grados * Math.PI) / 180;
+      deltaAngulo += anchoPerfilM / Math.tan(alphaRad / 2);
+    }
+  }
+
   // Riel superior (techo) — puede estar interrumpido por pases de altura completa
-  const ceilSegments: { start: number; end: number }[] = [{ start: 0, end: muro.geometria.largo_m }];
+  const ceilSegments: { start: number; end: number }[] = [{ start: 0, end: muro.geometria.largo_m + deltaAngulo }];
 
   for (const ab of muro.aberturas) {
     const esAlturaCompleta = ab.alto_m >= altoMuro - 1e-9;
@@ -51,7 +63,7 @@ export function calcularTornilleria(
   }
 
   // Riel inferior (piso) — interrumpido por puertas y pases
-  const floorSegments: { start: number; end: number }[] = [{ start: 0, end: muro.geometria.largo_m }];
+  const floorSegments: { start: number; end: number }[] = [{ start: 0, end: muro.geometria.largo_m + deltaAngulo }];
 
   for (const ab of muro.aberturas) {
     if (ab.tipo === "puerta" || ab.tipo === "pase") {
