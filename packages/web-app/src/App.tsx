@@ -40,6 +40,8 @@ const App: React.FC = () => {
         aberturas={form.aberturas}
         carasConfig={form.caras}
         capasConfig={form.capas_por_cara}
+        form={form}
+        catalogo={catalogo}
       />
     </div>
   );

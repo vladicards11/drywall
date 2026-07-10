@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { calcularMuro } from '@drywall-calc/core-engine';
 import { obtenerCatalogoGenericoEstandar } from '@drywall-calc/catalog-schemas';
 import type { Muro, ResultadoMuro, Abertura } from '@drywall-calc/catalog-schemas';
@@ -69,7 +69,6 @@ function validateForm(form: MuroFormData): FormErrors {
   }
 
   if (!errors.largo_m && !errors.alto_m) {
-    // Validate that all aberturas fit in the muro
     for (const ab of form.aberturas) {
       if (ab.ancho_m > largo) {
         errors.aberturas = `Abertura más ancha (${ab.ancho_m}m) que el muro (${largo}m)`;
@@ -89,8 +88,70 @@ function validateForm(form: MuroFormData): FormErrors {
   return errors;
 }
 
+export function serializeState(form: MuroFormData): string {
+  const params = new URLSearchParams();
+  params.set('largo', form.largo_m);
+  params.set('alto', form.alto_m);
+  params.set('estructura', form.estructura);
+  params.set('caras', String(form.caras));
+  params.set('capas', String(form.capas_por_cara));
+  params.set('perfil', form.perfil);
+  params.set('riel', form.riel);
+  params.set('separacion', String(form.separacion_montante_m));
+  params.set('placa_tipo', form.placa_tipo);
+  params.set('placa_espesor', String(form.placa_espesor_mm));
+  params.set('placa_formato', form.placa_formato);
+  params.set('placa_orientacion', form.placa_orientacion);
+  if (form.aberturas.length > 0) {
+    params.set('aberturas', JSON.stringify(form.aberturas));
+  }
+  return params.toString();
+}
+
+export function deserializeState(queryString: string): Partial<MuroFormData> | null {
+  try {
+    const params = new URLSearchParams(queryString);
+    if (!params.has('largo') || !params.has('alto')) return null;
+
+    const aberturasStr = params.get('aberturas');
+    let aberturas: Abertura[] = [];
+    if (aberturasStr) {
+      aberturas = JSON.parse(aberturasStr);
+    }
+
+    return {
+      largo_m: params.get('largo') || DEFAULT_FORM.largo_m,
+      alto_m: params.get('alto') || DEFAULT_FORM.alto_m,
+      estructura: (params.get('estructura') as any) || DEFAULT_FORM.estructura,
+      caras: Number(params.get('caras') || DEFAULT_FORM.caras) as 1 | 2,
+      capas_por_cara: Number(params.get('capas') || DEFAULT_FORM.capas_por_cara),
+      perfil: params.get('perfil') || DEFAULT_FORM.perfil,
+      riel: params.get('riel') || DEFAULT_FORM.riel,
+      separacion_montante_m: Number(params.get('separacion') || DEFAULT_FORM.separacion_montante_m),
+      placa_tipo: params.get('placa_tipo') || DEFAULT_FORM.placa_tipo,
+      placa_espesor_mm: Number(params.get('placa_espesor') || DEFAULT_FORM.placa_espesor_mm),
+      placa_formato: params.get('placa_formato') || DEFAULT_FORM.placa_formato,
+      placa_orientacion: (params.get('placa_orientacion') as any) || DEFAULT_FORM.placa_orientacion,
+      aberturas,
+    };
+  } catch (e) {
+    console.error('Error deserializing URL state:', e);
+    return null;
+  }
+}
+
+const getInitialForm = (): MuroFormData => {
+  if (typeof window !== 'undefined') {
+    const decoded = deserializeState(window.location.search);
+    if (decoded) {
+      return { ...DEFAULT_FORM, ...decoded };
+    }
+  }
+  return DEFAULT_FORM;
+};
+
 export function useCalculadora() {
-  const [form, setForm] = useState<MuroFormData>(DEFAULT_FORM);
+  const [form, setForm] = useState<MuroFormData>(getInitialForm);
   const [errors, setErrors] = useState<FormErrors>({});
   const [resultado, setResultado] = useState<ResultadoMuro | null>(null);
   const [state, setState] = useState<CalculationState>('idle');
@@ -102,7 +163,6 @@ export function useCalculadora() {
   ) => {
     setForm((prev) => {
       const next = { ...prev, [key]: value };
-      // Live validate fields that are being edited
       const newErrors = validateForm(next);
       setErrors(newErrors);
       return next;
@@ -115,17 +175,23 @@ export function useCalculadora() {
       ...prev,
       aberturas: [...prev.aberturas, ab],
     }));
-  }, []);
+    if (state === 'done' || state === 'error') setState('idle');
+  }, [state]);
 
   const removeAbertura = useCallback((idx: number) => {
     setForm((prev) => ({
       ...prev,
       aberturas: prev.aberturas.filter((_, i) => i !== idx),
     }));
-  }, []);
+    if (state === 'done' || state === 'error') setState('idle');
+  }, [state]);
 
-  const calcular = useCallback(() => {
-    const currentErrors = validateForm(form);
+  const calcular = useCallback((currentForm?: MuroFormData) => {
+    // Guard against React Event objects being passed as argument
+    const formToValidate = (currentForm && typeof currentForm === 'object' && 'largo_m' in currentForm)
+      ? currentForm
+      : form;
+    const currentErrors = validateForm(formToValidate);
     setErrors(currentErrors);
     if (Object.keys(currentErrors).length > 0) return;
 
@@ -136,24 +202,24 @@ export function useCalculadora() {
       const muro: Muro = {
         id: 'muro_calculadora',
         geometria: {
-          largo_m: parseFloat(form.largo_m),
-          alto_m: parseFloat(form.alto_m),
+          largo_m: parseFloat(formToValidate.largo_m),
+          alto_m: parseFloat(formToValidate.alto_m),
         },
         sistema: {
-          estructura: form.estructura,
-          caras: form.caras,
-          capas_por_cara: form.capas_por_cara,
-          perfil: form.perfil,
-          riel: form.riel,
-          separacion_montante_m: form.separacion_montante_m,
+          estructura: formToValidate.estructura,
+          caras: formToValidate.caras,
+          capas_por_cara: formToValidate.capas_por_cara,
+          perfil: formToValidate.perfil,
+          riel: formToValidate.riel,
+          separacion_montante_m: formToValidate.separacion_montante_m,
         },
         placa: {
-          tipo: form.placa_tipo,
-          espesor_mm: form.placa_espesor_mm,
-          formato_m: parseFormato(form.placa_formato),
-          orientacion: form.placa_orientacion,
+          tipo: formToValidate.placa_tipo,
+          espesor_mm: formToValidate.placa_espesor_mm,
+          formato_m: parseFormato(formToValidate.placa_formato),
+          orientacion: formToValidate.placa_orientacion,
         },
-        aberturas: form.aberturas,
+        aberturas: formToValidate.aberturas,
         encuentros: [],
       };
 
@@ -166,12 +232,25 @@ export function useCalculadora() {
     }
   }, [form]);
 
+  // Auto-calculate on initial mount if there is URL state loaded
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.search) {
+      const decoded = deserializeState(window.location.search);
+      if (decoded) {
+        calcular({ ...DEFAULT_FORM, ...decoded } as MuroFormData);
+      }
+    }
+  }, [calcular]);
+
   const reset = useCallback(() => {
     setForm(DEFAULT_FORM);
     setErrors({});
     setResultado(null);
     setState('idle');
     setErrorMsg('');
+    if (typeof window !== 'undefined' && window.location.search) {
+      window.history.replaceState({}, '', window.location.pathname);
+    }
   }, []);
 
   return {

@@ -97,10 +97,8 @@ export const MuroForm: React.FC<MuroFormProps> = ({
           <Input
             id="largo_m"
             label="Largo"
-            type="number"
-            step="0.01"
-            min="0.1"
-            max="50"
+            type="text"
+            inputMode="decimal"
             suffix="m"
             value={form.largo_m}
             onChange={(e) => onFieldChange('largo_m', e.target.value)}
@@ -110,10 +108,8 @@ export const MuroForm: React.FC<MuroFormProps> = ({
           <Input
             id="alto_m"
             label="Alto"
-            type="number"
-            step="0.01"
-            min="0.1"
-            max="15"
+            type="text"
+            inputMode="decimal"
             suffix="m"
             value={form.alto_m}
             onChange={(e) => onFieldChange('alto_m', e.target.value)}
@@ -359,7 +355,7 @@ export const MuroForm: React.FC<MuroFormProps> = ({
           id="btn-calcular"
           variant="primary"
           size="lg"
-          onClick={onCalcular}
+          onClick={() => onCalcular()}
           loading={isCalculating}
           disabled={hasErrors}
           style={{ flex: 1 }}

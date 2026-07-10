@@ -128,3 +128,60 @@ a:hover { color: var(--color-primary-hover); }
 .animate-pulse {
   animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+
+/* ===================================================
+   PRINT STYLES FOR HIGH-FIDELITY PDF GENERATION
+   =================================================== */
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+  
+  /* Hide interactive widgets */
+  aside,
+  button,
+  .no-print,
+  [class*="toolbar"],
+  [class*="footer"],
+  [class*="actions"],
+  [class*="trazabilidadSummary"],
+  [class*="trazabilidadList"] {
+    display: none !important;
+  }
+
+  main {
+    width: 100% !important;
+    max-width: 100% !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Make tables readable in black and white */
+  table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+    color: #000000 !important;
+    margin-top: 15px !important;
+  }
+
+  th {
+    background-color: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #0f172a !important;
+    font-weight: bold !important;
+  }
+
+  td {
+    border: 1px solid #cbd5e1 !important;
+    color: #334155 !important;
+  }
+
+  /* Prevent row splitting across pages */
+  tr {
+    page-break-inside: avoid !important;
+  }
+}
+
