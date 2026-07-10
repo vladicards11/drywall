@@ -359,18 +359,18 @@ Nota: se eligió formato de placa 1.20x3.00 (en vez de 2.40) a propósito — de
 **Derivación clave**
 - **Placas**: 3 columnas x 2 caras x 1 capa = 6 placas (con alto 3.20m en la grilla virtual, cortadas de placas de 2.40m)
 - **Montantes**:
-  - Verticales base: (ROUNDUP(3.60/0.40)+1) = 10 montantes verticales.
+  - Verticales base: (ROUNDUP(3.60/0.40)+1) = 10 posiciones de montante vertical.
   - Al ser `alto_m = 3.20m` mayor que `largo_barra_m = 3.00m` del catálogo, se requiere empalme en cada montante.
-  - Longitud por vertical = 3.20 + 0.30 (overlap) = 3.50m.
-  - Longitud total de montantes = 10 vertical lines x 3.50m = 35.00 ml.
-  - Barras comerciales = ROUNDUP(35.00 / 3.00) = 12 barras de montante de 3.00m.
+  - Cada posición de montante necesita comprar barras enteras para cubrir la altura de 3.20m con un traslape de 0.30m.
+  - Barras por posición = CEIL((3.20 - 0.30) / (3.00 - 0.30)) = 2 barras.
+  - Barras totales de montante = 10 posiciones x 2 barras/posición = 20 barras de 3.00m.
 - **Rieles**: (ceil 3.60 + floor 3.60 = 7.20m) → 3 barras
 - **Juntas**: 2 juntas x 3.20m x 2 caras = 12.80 ml. Con traslape (1.05) = 13.44 ml → 1 rollo
 - **Masilla**: 12.80 ml x 0.3 x 3 = 11.52 kg → 1 bolsa
 - **Aislante**: area neta = 3.60 x 3.20 = 11.52 m² → 1 paquete (cada uno de 12 m²)
 - **Tornillos**:
   - Placa-perfil: 11.52 m² x 2 caras x 25/m² = 576
-  - Perfil-perfil: 12 barras x 2 uniones x 2 = 48
+  - Perfil-perfil: 20 barras x 2 uniones x 2 = 80
   - Anclajes losa: (techo 9 + piso 9 = 18) = 18
 - **Esquineros**: 0
 
@@ -378,8 +378,8 @@ Nota: se eligió formato de placa 1.20x3.00 (en vez de 2.40) a propósito — de
 ```json
 {
   "placas": { "cantidad_total": 6, "peso_total_kg": 218.88 },
-  "perfiles": { "montantes": 12, "rieles_barras": 3, "montantes_refuerzo_vanos": 0 },
-  "tornillos": { "placa_perfil": 576, "perfil_perfil": 48, "anclajes_losa": 18 },
+  "perfiles": { "montantes": 20, "rieles_barras": 3, "montantes_refuerzo_vanos": 0 },
+  "tornillos": { "placa_perfil": 576, "perfil_perfil": 80, "anclajes_losa": 18 },
   "cinta": { "ml_total": 13.44, "rollos": 1 },
   "masilla": { "kg_total": 11.52, "bolsas": 1 },
   "aislante": { "m2": 11.52, "paquetes": 1 },

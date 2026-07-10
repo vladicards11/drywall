@@ -358,8 +358,8 @@ describe("Orquestador - Pruebas de integración de Casos de Oro", () => {
     // Muro de 2.80m: 10 lineas verticales, sin empalme = 10 barras
     expect(res280.perfiles.montantes).toBe(10);
 
-    // Muro de 3.20m: 10 lineas verticales, requiere empalme = 12 barras (ROUNDUP(10 * 3.50 / 3.00))
-    expect(res320.perfiles.montantes).toBe(12);
+    // Muro de 3.20m: 10 lineas verticales, requiere empalme = 20 barras (2 por posición)
+    expect(res320.perfiles.montantes).toBe(20);
 
     expect(res320.perfiles.montantes).toBeGreaterThan(res280.perfiles.montantes);
   });

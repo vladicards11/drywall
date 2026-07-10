@@ -86,13 +86,14 @@ export function calcularPerfiles(
   // 6. Si alto_m supera largo_barra_m del montante, calcular el empalme (traslape de 30 cm)
   const montanteConfig = catalogo.perfiles.montante.find((m) => m.codigo === muro.sistema.perfil);
   const largoBarraMontante = montanteConfig ? montanteConfig.largo_barra_m : 3.00;
+  let barsPerPosition = 1;
   if (muro.geometria.alto_m > largoBarraMontante) {
     const OVERLAP_EMPALME_M = 0.30;
-    const factorEmpalme = (muro.geometria.alto_m + OVERLAP_EMPALME_M) / largoBarraMontante;
-    montantesTotal = roundUpSafe(montantesTotal * factorEmpalme);
-    montantesRefuerzoVanosRes = roundUpSafe(montantesRefuerzoVanosRes * factorEmpalme);
-    montantesUnionRes = roundUpSafe(montantesUnionRes * factorEmpalme);
+    barsPerPosition = Math.ceil((muro.geometria.alto_m - OVERLAP_EMPALME_M) / (largoBarraMontante - OVERLAP_EMPALME_M));
   }
+  montantesTotal *= barsPerPosition;
+  montantesRefuerzoVanosRes *= barsPerPosition;
+  montantesUnionRes *= barsPerPosition;
 
   return {
     montantes: montantesTotal,
