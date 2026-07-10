@@ -153,3 +153,17 @@ export interface ResultadoMuro {
   esquineros: { ml_total: number };
   trazabilidad: string[];
 }
+
+export interface ResultadoProyecto {
+  proyecto: string;
+  muros: ResultadoMuro[];
+  totales: {
+    placas: { cantidad_total: number };
+    perfiles: ResultadoPerfiles;
+    tornillos: ResultadoTornillos;
+    cinta: { ml_total: number; rollos: number };
+    masilla: { kg_total: number; bolsas: number };
+    aislante: { m2: number; paquetes: number };
+    esquineros: { ml_total: number };
+  };
+}

@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { calcularMuro, GeometriaInvalidaError } from "../src/orquestador.js";
+import { calcularProyecto, ProyectoInvalidoError } from "../src/proyecto.js";
 import { obtenerCatalogoGenericoEstandar } from "@drywall-calc/catalog-schemas";
 import { roundUpSafe } from "../src/utils/redondeo.js";
 
@@ -54,44 +55,68 @@ describe("Orquestador - Pruebas de integración de Casos de Oro", () => {
 
   it("Caso C - Dos muros con encuentro en esquina", () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const muros = casoC.input.muros as any[];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const uniones = casoC.input.uniones as any[];
+    const res = calcularProyecto(casoC.input as any, catalogo);
 
-    const res1 = calcularMuro(muros[0], uniones, catalogo);
-    const res2 = calcularMuro(muros[1], uniones, catalogo);
+    expect(res.totales.placas.cantidad_total).toBe(casoC.output_esperado.placas.cantidad_total);
+    expect(res.totales.perfiles.montantes).toBe(casoC.output_esperado.perfiles.montantes);
+    expect(res.totales.perfiles.rieles_barras).toBe(casoC.output_esperado.perfiles.rieles_barras);
+    expect(res.totales.tornillos.placa_perfil).toBe(casoC.output_esperado.tornillos.placa_perfil);
+    expect(res.totales.tornillos.perfil_perfil).toBe(casoC.output_esperado.tornillos.perfil_perfil);
+    expect(res.totales.tornillos.anclajes_losa).toBe(casoC.output_esperado.tornillos.anclajes_losa);
+    expect(res.totales.cinta.ml_total).toBeCloseTo(casoC.output_esperado.cinta.ml_total, 2);
+    expect(res.totales.cinta.rollos).toBe(casoC.output_esperado.cinta.rollos);
+    expect(res.totales.masilla.kg_total).toBeCloseTo(casoC.output_esperado.masilla.kg_total, 2);
+    expect(res.totales.masilla.bolsas).toBe(casoC.output_esperado.masilla.bolsas);
+    expect(res.totales.aislante.m2).toBeCloseTo(casoC.output_esperado.aislante.m2, 2);
+    expect(res.totales.aislante.paquetes).toBe(casoC.output_esperado.aislante.paquetes);
+    expect(res.totales.esquineros.ml_total).toBeCloseTo(casoC.output_esperado.esquineros.ml_total, 2);
+  });
 
-    // Consolidación de Proyecto
-    const placasTotal = res1.placas.cantidad_total + res2.placas.cantidad_total;
-    const montantesTotal = res1.perfiles.montantes + res2.perfiles.montantes;
-    const rielesTotal = res1.perfiles.rieles_barras + res2.perfiles.rieles_barras;
-    const tornillosPlacaTotal = res1.tornillos.placa_perfil + res2.tornillos.placa_perfil;
-    const tornillosPerfilTotal = res1.tornillos.perfil_perfil + res2.tornillos.perfil_perfil;
-    const anclajesTotal = res1.tornillos.anclajes_losa + res2.tornillos.anclajes_losa;
-    const esquinerosTotal = res1.esquineros.ml_total + res2.esquineros.ml_total;
+  it("Debería arrojar ProyectoInvalidoError ante fallas de integridad referencial", () => {
+    // Caso con unión que apunta a muro inexistente
+    const invalidProyecto1 = {
+      proyecto: "Proyecto Inválido 1",
+      catalogo: "generico_estandar",
+      elementos: [
+        {
+          id: "muro_valido",
+          geometria: { largo_m: 3.00, alto_m: 2.40 },
+          sistema: { estructura: "simple", caras: 2, capas_por_cara: 1, perfil: "M48", riel: "R48", separacion_montante_m: 0.40 },
+          placa: { tipo: "ST", espesor_mm: 12.5, formato_m: [1.20, 2.40], orientacion: "vertical" },
+          aberturas: [],
+          encuentros: ["union_valida"]
+        }
+      ],
+      uniones: [
+        {
+          id: "union_valida",
+          muros_conectados: ["muro_valido", "muro_inexistente"],
+          angulo_grados: 90,
+          tipo_union: "esquina_externa_simple",
+          config_modulacion: { resetear_perfiles: true, perfiles_simetricos: false }
+        }
+      ]
+    };
 
-    const cintaMlTotal = res1.cinta.ml_total + res2.cinta.ml_total;
-    const masillaKgTotal = res1.masilla.kg_total + res2.masilla.kg_total;
-    const aislanteM2Total = res1.aislante.m2 + res2.aislante.m2;
+    // Caso con muro que apunta a unión inexistente
+    const invalidProyecto2 = {
+      proyecto: "Proyecto Inválido 2",
+      catalogo: "generico_estandar",
+      elementos: [
+        {
+          id: "muro_valido",
+          geometria: { largo_m: 3.00, alto_m: 2.40 },
+          sistema: { estructura: "simple", caras: 2, capas_por_cara: 1, perfil: "M48", riel: "R48", separacion_montante_m: 0.40 },
+          placa: { tipo: "ST", espesor_mm: 12.5, formato_m: [1.20, 2.40], orientacion: "vertical" },
+          aberturas: [],
+          encuentros: ["union_inexistente"]
+        }
+      ],
+      uniones: []
+    };
 
-    // Cinta y masilla a nivel proyecto
-    const rollosTotal = roundUpSafe(cintaMlTotal / catalogo.cinta.rendimiento_ml_por_rollo);
-    const bolsasTotal = roundUpSafe(masillaKgTotal / catalogo.masilla.presentacion_kg_por_bolsa);
-    const aislantePaquetesTotal = roundUpSafe(aislanteM2Total / catalogo.aislante.presentacion_m2_por_paquete);
-
-    expect(placasTotal).toBe(casoC.output_esperado.placas.cantidad_total);
-    expect(montantesTotal).toBe(casoC.output_esperado.perfiles.montantes);
-    expect(rielesTotal).toBe(casoC.output_esperado.perfiles.rieles_barras);
-    expect(tornillosPlacaTotal).toBe(casoC.output_esperado.tornillos.placa_perfil);
-    expect(tornillosPerfilTotal).toBe(casoC.output_esperado.tornillos.perfil_perfil);
-    expect(anclajesTotal).toBe(casoC.output_esperado.tornillos.anclajes_losa);
-    expect(cintaMlTotal).toBeCloseTo(casoC.output_esperado.cinta.ml_total, 2);
-    expect(rollosTotal).toBe(casoC.output_esperado.cinta.rollos);
-    expect(masillaKgTotal).toBeCloseTo(casoC.output_esperado.masilla.kg_total, 2);
-    expect(bolsasTotal).toBe(casoC.output_esperado.masilla.bolsas);
-    expect(aislanteM2Total).toBeCloseTo(casoC.output_esperado.aislante.m2, 2);
-    expect(aislantePaquetesTotal).toBe(casoC.output_esperado.aislante.paquetes);
-    expect(esquinerosTotal).toBeCloseTo(casoC.output_esperado.esquineros.ml_total, 2);
+    expect(() => calcularProyecto(invalidProyecto1 as any, catalogo)).toThrow(ProyectoInvalidoError);
+    expect(() => calcularProyecto(invalidProyecto2 as any, catalogo)).toThrow(ProyectoInvalidoError);
   });
 
   it("Caso D - Muro con doble capa por cara", () => {

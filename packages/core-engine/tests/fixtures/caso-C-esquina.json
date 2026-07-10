@@ -1,6 +1,8 @@
 {
   "input": {
-    "muros": [
+    "proyecto": "Caso C - Encuentro en Esquina",
+    "catalogo": "generico_estandar",
+    "elementos": [
       {
         "id": "muro_C1",
         "geometria": { "largo_m": 3.00, "alto_m": 2.40 },
