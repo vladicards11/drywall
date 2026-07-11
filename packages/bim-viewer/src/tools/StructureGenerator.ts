@@ -31,7 +31,7 @@ export interface CielorrasoStructureParams {
 
 // Generadores de geometría 3D de perfilería metálica extruida a escala real
 function crearGeometriaMontante(studWidth: number, studHeight: number, trackDepth: number): THREE.BufferGeometry {
-  const t = 0.0006; // Espesor de chapa plegada fina de drywall (0.6 mm)
+  const t = 0.0025; // Espesor de chapa optimizado para visualización 3D nítida (2.5 mm) para evitar Z-Fighting
   const w = trackDepth - 0.002;
   const f = studWidth;
   const lip = 0.008; // Labio/pestaña interna de rigidización estándar
@@ -64,7 +64,7 @@ function crearGeometriaMontante(studWidth: number, studHeight: number, trackDept
 }
 
 function crearGeometriaRiel(largo: number, trackHeight: number, trackDepth: number): THREE.BufferGeometry {
-  const t = 0.0006; // Espesor de chapa plegada fina de drywall (0.6 mm)
+  const t = 0.0025; // Espesor de chapa optimizado para visualización 3D nítida (2.5 mm) para evitar Z-Fighting
   const w = trackDepth;
   const h = trackHeight;
 
