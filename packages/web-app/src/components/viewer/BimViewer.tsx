@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import * as THREE from 'three';
 import { BimWorld, IfcPipeline, MeasureTools, ViewsManager, DrawingExporter, ModelNavigator, StructureGenerator } from '@drywall-calc/bim-viewer';
 import type { MeasureMode, View2DType, ElementProperties } from '@drywall-calc/bim-viewer';
 import type { ProyectoFormData } from '../../hooks/useProyecto';
@@ -50,6 +51,14 @@ export const BimViewer: React.FC<BimViewerProps> = ({
   const [categories, setCategories] = useState<string[]>([]);
   const [categoryVisibility, setCategoryVisibility] = useState<{ [cat: string]: boolean }>({});
   const [showSidebar, setShowSidebar] = useState(false);
+  const [floors, setFloors] = useState<any[]>([]);
+  const [activeFloorId, setActiveFloorId] = useState<string | null>(null);
+
+  // Estados para avance de obra y marcadores 3D
+  const [murosAvance, setMurosAvance] = useState<{ [id: string]: 'planificado' | 'estructurado' | 'cerrado' | 'terminado' }>({});
+  const [pinMode, setPinMode] = useState(false);
+  const [markers, setMarkers] = useState<Array<{ id: string; text: string; point: THREE.Vector3 }>>([]);
+  const [rawIfcBuffer, setRawIfcBuffer] = useState<ArrayBuffer | null>(null);
 
   // Inicializar el visor y su ciclo de vida
   useEffect(() => {
@@ -67,14 +76,18 @@ export const BimViewer: React.FC<BimViewerProps> = ({
     const navigator = new ModelNavigator(bimWorld);
     const generator = new StructureGenerator(bimWorld);
 
-    ifcPipeline.init().then(() => {
-      setWorld(bimWorld);
-      setPipeline(ifcPipeline);
-      setMeasureTools(tools);
-      setViewsManager(views);
-      setModelNavigator(navigator);
-      setStructureGenerator(generator);
-    });
+    ifcPipeline.init('/web-ifc/')
+      .then(() => {
+        setWorld(bimWorld);
+        setPipeline(ifcPipeline);
+        setMeasureTools(tools);
+        setViewsManager(views);
+        setModelNavigator(navigator);
+        setStructureGenerator(generator);
+      })
+      .catch((err) => {
+        console.error("Error al inicializar el visualizador 3D:", err);
+      });
 
     // Escuchar cambios de selección
     navigator.onElementSelected((props) => {
@@ -141,6 +154,7 @@ export const BimViewer: React.FC<BimViewerProps> = ({
   // Cambiar modo de medición desde botones
   const handleToggleMeasure = (mode: MeasureMode) => {
     if (!measureTools) return;
+    setPinMode(false); // Desactivar modo pin al medir
     const newMode = measureMode === mode ? 'none' : mode;
     measureTools.setMode(newMode);
     setMeasureMode(newMode);
@@ -184,6 +198,56 @@ export const BimViewer: React.FC<BimViewerProps> = ({
     setCategoryVisibility(prev => ({ ...prev, [category]: nextVal }));
   };
 
+  // Cambiar el estado de avance de un muro y aplicar coloración en el visor
+  const handleStatusChange = (muroName: string, status: 'planificado' | 'estructurado' | 'cerrado' | 'terminado') => {
+    const newAvance = { ...murosAvance, [muroName]: status };
+    setMurosAvance(newAvance);
+    
+    if (modelNavigator) {
+      const statusMap = new Map<string | number, 'planificado' | 'estructurado' | 'cerrado' | 'terminado'>();
+      Object.entries(newAvance).forEach(([key, val]) => {
+        statusMap.set(key, val);
+      });
+      modelNavigator.applyProgressColors(statusMap);
+    }
+  };
+
+  // Click doble en lienzo para colocar un marcador/anotación 3D
+  const handleCanvasDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!pinMode || !world || !modelNavigator) return;
+
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2(x, y);
+
+    const camera = world.world.camera.three;
+    const scene = world.world.scene.three;
+
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(scene.children, true);
+
+    if (intersects.length > 0) {
+      const validIntersect = intersects.find(intersect => {
+        let isMesh = intersect.object instanceof THREE.Mesh;
+        let isVisible = intersect.object.visible;
+        return isMesh && isVisible;
+      });
+
+      const intersect = validIntersect || intersects[0];
+      const text = prompt("Ingrese nota de control de calidad o incidente en 3D:");
+      if (text) {
+        const markerId = modelNavigator.createMarker(text, intersect.point);
+        if (markerId) {
+          setMarkers(prev => [...prev, { id: markerId, text, point: intersect.point }]);
+        }
+      }
+    }
+  };
+
   // Importar el elemento seleccionado del visor hacia la calculadora de Drywall
   const handleImportElementToCalc = () => {
     if (!selectedProps || !onImportarMurosDirecto) return;
@@ -208,7 +272,15 @@ export const BimViewer: React.FC<BimViewerProps> = ({
 
   // Modelar la estructura Drywall (perfiles y placas) calculada en 3D
   const handleGenerate3DStructure = () => {
-    if (!structureGenerator || !proyecto) return;
+    console.log("Modelar Estructura clicked. Generator:", structureGenerator, "Proyecto:", proyecto, "Tab:", activeElementTab);
+    if (!structureGenerator) {
+      alert("El visualizador 3D (WASM) aún no se ha inicializado o falló al cargar.");
+      return;
+    }
+    if (!proyecto) {
+      alert("No hay un proyecto activo configurado en el sistema.");
+      return;
+    }
 
     if (activeElementTab === 'cielorrasos') {
       const cie = proyecto.cielorrasos?.[selectedCielorrasoIdx];
@@ -252,7 +324,8 @@ export const BimViewer: React.FC<BimViewerProps> = ({
       const separacionMontante = Number(muro.separacion_montante_m) || 0.40;
 
       // Obtener espesor real del perfil
-      const espesorStr = muro.perfil.replace(/\D/g, ''); // Extrae números (ej: P89 -> 89)
+      const perfilStr = muro.perfil || muro.riel || "P89"; // Fallback seguro
+      const espesorStr = perfilStr.replace(/\D/g, ''); // Extrae números (ej: P89 -> 89)
       const espesor = espesorStr ? parseInt(espesorStr) / 1000 : 0.089;
 
       // Limpiar modelo IFC previo del visualizador para ver únicamente la maqueta estructural
@@ -293,8 +366,14 @@ export const BimViewer: React.FC<BimViewerProps> = ({
     if (structureGenerator) structureGenerator.clear();
     if (pipeline) pipeline.clear();
     if (modelNavigator) modelNavigator.clear();
+    if (modelNavigator) modelNavigator.clearAllMarkers();
     setHasModel(false);
     setIsShowing3DStructure(false);
+    setFloors([]);
+    setActiveFloorId(null);
+    setMarkers([]);
+    setMurosAvance({});
+    setRawIfcBuffer(null);
   };
 
   // Exportar plano de despiece CAD del muro activo
@@ -336,6 +415,113 @@ export const BimViewer: React.FC<BimViewerProps> = ({
     document.body.removeChild(link);
   };
 
+  // Exportar plano en formato DXF profesional para AutoCAD
+  const handleExportDXF = () => {
+    if (!proyecto || !proyecto.muros || proyecto.muros.length === 0) {
+      alert("No hay muros configurados en el proyecto actual para exportar.");
+      return;
+    }
+
+    const muro = proyecto.muros[selectedMuroIdx] || proyecto.muros[0];
+    const exportData = {
+      proyectoNombre: proyecto.nombre || "Proyecto Drywall",
+      muroNombre: `Muro #${selectedMuroIdx + 1}`,
+      largo_m: parseFloat(muro.largo_m) || 3.0,
+      alto_m: parseFloat(muro.alto_m) || 2.6,
+      distanciaParantes_cm: (Number(muro.separacion_montante_m) || 0.40) * 100,
+      perfilCodigo: muro.perfil || "P89",
+      rielCodigo: muro.riel || "R90",
+      placaTipo: muro.placa_tipo || "ST",
+      aberturas: (muro.aberturas || []).map((ab: any) => ({
+        x: Number(ab.distancia_desde_inicio_m) || 0,
+        y: ab.tipo === 'ventana' ? 1.0 : 0,
+        w: Number(ab.ancho_m) || 0.8,
+        h: Number(ab.alto_m) || 2.0,
+        tipo: (ab.tipo || 'pase') as 'puerta' | 'ventana' | 'pase'
+      }))
+    };
+
+    const dxfString = DrawingExporter.generateTechnicalDxf(exportData);
+    
+    // Descargar el archivo DXF
+    const blob = new Blob([dxfString], { type: 'application/dxf;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `plano_despiece_cad_${exportData.muroNombre.replace(/\s+/g, '_').toLowerCase()}.dxf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Inyectar elementos de drywall (parantes/placas) en el IFC original y descargar
+  const handleInyectarDescargarIFC = async () => {
+    if (!rawIfcBuffer) {
+      alert("Por favor, cargue primero un modelo IFC original en el visor.");
+      return;
+    }
+    if (!resultado || !resultado.muros || resultado.muros.length === 0) {
+      alert("No hay resultados de cálculo en el proyecto actual para inyectar.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const murosData = resultado.muros.map((muro) => {
+        const elementos: any[] = [];
+
+        // Montantes
+        const numMontantes = (muro.perfiles.montantes || 0) + (muro.perfiles.montantes_refuerzo_vanos || 0) + (muro.perfiles.montantes_union || 0);
+        for (let i = 0; i < numMontantes; i++) {
+          elementos.push({
+            tipo: 'parante',
+            nombre: `Muro ${muro.muro_id} - Parante #${i + 1}`
+          });
+        }
+
+        // Rieles
+        const numRieles = muro.perfiles.rieles_barras || 0;
+        for (let i = 0; i < numRieles; i++) {
+          elementos.push({
+            tipo: 'parante',
+            nombre: `Muro ${muro.muro_id} - Riel #${i + 1}`
+          });
+        }
+
+        // Placas
+        const numPlacas = Math.ceil(muro.placas.cantidad_total || 0);
+        for (let i = 0; i < numPlacas; i++) {
+          elementos.push({
+            tipo: 'placa',
+            nombre: `Muro ${muro.muro_id} - Placa #${i + 1}`
+          });
+        }
+
+        return {
+          muroId: muro.muro_id,
+          elementos
+        };
+      });
+
+      const { inyectarEstructuraDrywall } = await import('@drywall-calc/ifc-importer');
+      const modifiedBuffer = await inyectarEstructuraDrywall(rawIfcBuffer, murosData);
+
+      const blob = new Blob([modifiedBuffer as any], { type: 'application/octet-stream' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${proyecto?.nombre || 'proyecto'}_modificado_drywall.ifc`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error("Error al inyectar elementos en IFC:", err);
+      alert("Hubo un error al inyectar los elementos en el archivo IFC.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Procesar archivo IFC
   const handleFile = async (file: File) => {
     if (!pipeline || !file.name.endsWith('.ifc')) return;
@@ -346,11 +532,15 @@ export const BimViewer: React.FC<BimViewerProps> = ({
     try {
       const reader = new FileReader();
       reader.onload = async (e) => {
-        const buffer = new Uint8Array(e.target?.result as ArrayBuffer);
+        const arrayBuffer = e.target?.result as ArrayBuffer;
+        setRawIfcBuffer(arrayBuffer);
+        const buffer = new Uint8Array(arrayBuffer);
         pipeline.clear(); // Limpiar modelo previo
         if (measureTools) measureTools.clearAll();
         if (viewsManager) viewsManager.clearClippingPlanes();
         if (modelNavigator) modelNavigator.clear();
+        setFloors([]);
+        setActiveFloorId(null);
         
         const model = await pipeline.loadIfc(buffer, file.name);
         
@@ -362,6 +552,12 @@ export const BimViewer: React.FC<BimViewerProps> = ({
           const initialVis: { [cat: string]: boolean } = {};
           cats.forEach(c => initialVis[c] = true);
           setCategoryVisibility(initialVis);
+        }
+
+        if (model && viewsManager) {
+          await viewsManager.generatePlans(model);
+          const planViews = viewsManager.getPlans();
+          setFloors(planViews);
         }
 
         setHasModel(true);
@@ -398,7 +594,11 @@ export const BimViewer: React.FC<BimViewerProps> = ({
   return (
     <div className={styles.viewerContainer} onDragEnter={handleDrag}>
       {/* Canvas DOM container */}
-      <div ref={containerRef} className={styles.canvasContainer} />
+      <div 
+        ref={containerRef} 
+        className={styles.canvasContainer} 
+        onDoubleClick={handleCanvasDoubleClick}
+      />
 
       {/* Input oculto de archivos */}
       <input
@@ -560,6 +760,22 @@ export const BimViewer: React.FC<BimViewerProps> = ({
                     </div>
                   )}
 
+                  {/* Selector de estado físico de avance */}
+                  <div className={styles.propertyRow} style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.6rem', marginTop: '0.4rem', flexDirection: 'column', gap: '0.25rem', alignItems: 'stretch' }}>
+                    <span className={styles.propertyKey} style={{ textAlign: 'left', marginBottom: '0.2rem' }}>Estado de Avance Físico:</span>
+                    <select
+                      value={murosAvance[selectedProps.name] || 'planificado'}
+                      onChange={(e) => handleStatusChange(selectedProps.name, e.target.value as any)}
+                      className={styles.floorSelect}
+                      style={{ width: '100%', height: '32px', minWidth: 'auto' }}
+                    >
+                      <option value="planificado">⚪ Planificado</option>
+                      <option value="estructurado">🟡 Estructurado (Parantes)</option>
+                      <option value="cerrado">🔵 Cerrado (Placas)</option>
+                      <option value="terminado">🟢 Terminado (Masilla/Cinta)</option>
+                    </select>
+                  </div>
+
                   {/* Botón de importación a calculadora */}
                   {onImportarMurosDirecto && (selectedProps.type.toUpperCase().includes('WALL') || selectedProps.type.toUpperCase().includes('MURO')) && (
                     <button 
@@ -580,6 +796,47 @@ export const BimViewer: React.FC<BimViewerProps> = ({
                 <div className={styles.noSelection}>
                   <div className={styles.noSelectionIcon}>🖱</div>
                   <p>Haz click sobre cualquier elemento del modelo 3D para ver sus dimensiones deducidas e importarlas</p>
+                </div>
+              )}
+            </div>
+
+            {/* Lista de incidentes/anotaciones 3D */}
+            <div style={{ height: '1px', background: 'rgba(255, 255, 255, 0.06)', margin: '0.5rem 0' }} />
+            <div className={styles.sidebarSection}>
+              <h3 className={styles.sectionTitle}>📍 Notas de Calidad ({markers.length})</h3>
+              {markers.length === 0 ? (
+                <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Haga doble clic en una pared con el modo marcador [📍] activo para crear una nota 3D.</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', maxHeight: '150px', overflowY: 'auto' }}>
+                  {markers.map((m) => (
+                    <div 
+                      key={m.id} 
+                      style={{ 
+                        background: 'rgba(2, 6, 17, 0.4)', 
+                        border: '1px solid rgba(255,255,255,0.04)', 
+                        borderRadius: '8px', 
+                        padding: '0.5rem', 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center',
+                        fontSize: '0.75rem'
+                      }}
+                    >
+                      <span style={{ color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '80%' }} title={m.text}>
+                        {m.text}
+                      </span>
+                      <button 
+                        onClick={() => {
+                          modelNavigator?.deleteMarker(m.id);
+                          setMarkers(prev => prev.filter(x => x.id !== m.id));
+                        }}
+                        style={{ background: 'transparent', border: 'none', color: '#f43f5e', cursor: 'pointer', fontSize: '0.8rem', padding: 0 }}
+                        title="Eliminar pin"
+                      >
+                        ❌
+                      </button>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -609,6 +866,35 @@ export const BimViewer: React.FC<BimViewerProps> = ({
           >
             🌐
           </button>
+
+          {/* Selector de pisos */}
+          {floors.length > 0 && (
+            <>
+              <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
+              <select
+                value={activeFloorId || ""}
+                onChange={async (e) => {
+                  const id = e.target.value;
+                  if (id) {
+                    await viewsManager?.goToPlan(id);
+                    setActiveFloorId(id);
+                  } else {
+                    await viewsManager?.exitPlan();
+                    setActiveFloorId(null);
+                  }
+                }}
+                className={styles.floorSelect}
+                title="Seleccionar Piso / Nivel"
+              >
+                <option value="">Vista 3D Completa</option>
+                {floors.map((floor) => (
+                  <option key={floor.id} value={floor.id}>
+                    {floor.name || `Piso ${floor.id}`}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
 
           {/* Sidebar toggle button */}
           <button 
@@ -687,6 +973,17 @@ export const BimViewer: React.FC<BimViewerProps> = ({
             ⬜
           </button>
 
+          <button 
+            className={`${styles.toolButton} ${pinMode ? styles.toolButtonActive : ''}`} 
+            title="Modo Pin / Marcador (Doble clic en muro para colocar) (📍)"
+            onClick={() => {
+              setPinMode(!pinMode);
+              if (measureMode !== 'none') handleToggleMeasure('none');
+            }}
+          >
+            📍
+          </button>
+
           <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
 
           {/* Filtros interactivos de capas */}
@@ -756,6 +1053,36 @@ export const BimViewer: React.FC<BimViewerProps> = ({
             💾 CAD
           </button>
 
+          <button 
+            className={styles.fileButton} 
+            style={{ 
+              padding: '0.35rem 0.75rem', 
+              fontSize: '0.78rem', 
+              boxShadow: 'none',
+              background: 'linear-gradient(135deg, #f59e0b, #d97706)'
+            }}
+            title="Exportar plano de modulación en formato AutoCAD (DXF)"
+            onClick={handleExportDXF}
+          >
+            📐 DXF
+          </button>
+
+          {rawIfcBuffer && (
+            <button 
+              className={styles.fileButton} 
+              style={{ 
+                padding: '0.35rem 0.75rem', 
+                fontSize: '0.78rem', 
+                boxShadow: 'none',
+                background: 'linear-gradient(135deg, #10b981, #059669)'
+              }}
+              title="Inyectar perfiles y placas calculados en el modelo IFC original y descargar"
+              onClick={handleInyectarDescargarIFC}
+            >
+              📥 Descargar IFC Modificado
+            </button>
+          )}
+
           <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
 
           {/* Borrar mediciones / Todo */}
@@ -768,6 +1095,10 @@ export const BimViewer: React.FC<BimViewerProps> = ({
               modelNavigator?.clear();
               if (structureGenerator) structureGenerator.clear();
               setIsShowing3DStructure(false);
+              if (modelNavigator) modelNavigator.clearAllMarkers();
+              setMarkers([]);
+              setMurosAvance({});
+              setRawIfcBuffer(null);
             }}
           >
             🧼

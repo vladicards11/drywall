@@ -62,6 +62,7 @@
   margin-bottom: 0.5rem;
   background: linear-gradient(135deg, #a5b4fc, #818cf8);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -335,4 +336,30 @@
   margin-bottom: 0.5rem;
   opacity: 0.5;
 }
+
+.floorSelect {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  color: #f1f5f9;
+  padding: 0 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  height: 38px;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-width: 140px;
+}
+
+.floorSelect:hover {
+  background: rgba(15, 23, 42, 0.8);
+  border-color: #6366f1;
+}
+
+.floorSelect option {
+  background: #0f172a;
+  color: #f1f5f9;
+}
+
 

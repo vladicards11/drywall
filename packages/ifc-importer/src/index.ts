@@ -4,6 +4,8 @@
 
 export { parseIFC, disposeParser } from './parser.js';
 export { mapMuroIFCToFormData, mapMurosIFCToFormData } from './mapper.js';
+export { inyectarEstructuraDrywall } from './injector.js';
+export type { WallInjectionData, InjectorElement } from './injector.js';
 export type {
   IfcImportResult,
   MuroIFC,

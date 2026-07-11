@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import type { PlacaRect, Abertura, JuntaSegmento } from '@drywall-calc/catalog-schemas';
 import styles from './MuroVisualizer.module.css';
 
@@ -14,7 +14,7 @@ interface MuroSvgProps {
   onMouseMove: (e: React.MouseEvent<SVGSVGElement, MouseEvent>) => void;
   onMouseUp: () => void;
   onMouseLeave: () => void;
-  onWheel: (e: React.WheelEvent<SVGSVGElement>) => void;
+  onWheel: (e: WheelEvent) => void;
 }
 
 export const MuroSvg: React.FC<MuroSvgProps> = ({
@@ -33,6 +33,15 @@ export const MuroSvg: React.FC<MuroSvgProps> = ({
 }) => {
   const [hoveredPlaca, setHoveredPlaca] = useState<PlacaRect | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  // Adjuntar wheel como listener nativo con passive:false para poder llamar preventDefault()
+  useEffect(() => {
+    const el = svgRef.current;
+    if (!el) return;
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [onWheel]);
 
   // 1. Definir dimensiones base de renderizado.
   const SCALE = 100;
@@ -65,13 +74,13 @@ export const MuroSvg: React.FC<MuroSvgProps> = ({
   return (
     <div className={styles.svgContainer}>
       <svg
+        ref={svgRef}
         className={styles.svgCanvas}
         viewBox={`0 0 ${svgWidth} ${svgHeight}`}
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
         onMouseLeave={onMouseLeave}
-        onWheel={onWheel}
         style={{ cursor: 'grab' }}
       >
         <defs>

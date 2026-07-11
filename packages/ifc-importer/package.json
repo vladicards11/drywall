@@ -9,7 +9,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "web-ifc": "^0.0.57"
+    "web-ifc": "0.0.68"
   },
   "devDependencies": {
     "typescript": "^5.2.0",

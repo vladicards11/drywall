@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { MuroSvg } from './MuroSvg';
 import { Button } from '../ui/Button';
 
@@ -77,13 +77,13 @@ export const MuroVisualizer: React.FC<MuroVisualizerProps> = ({
   const handleMouseUp = () => setIsDragging(false);
   const handleMouseLeave = () => setIsDragging(false);
 
-  // Mouse wheel zoom handler
-  const handleWheel = (e: React.WheelEvent<SVGSVGElement>) => {
+  // Mouse wheel zoom handler (tipo nativo WheelEvent, adjunto con {passive:false} en MuroSvg)
+  const handleWheel = useCallback((e: WheelEvent) => {
     e.preventDefault();
     const zoomIntensity = 0.05;
     const delta = e.deltaY < 0 ? 1 : -1;
     setZoom((z) => Math.max(0.4, Math.min(z + delta * zoomIntensity, 3.0)));
-  };
+  }, []);
 
   return (
     <div className={styles.visualizer}>

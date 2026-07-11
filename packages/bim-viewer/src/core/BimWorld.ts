@@ -5,6 +5,7 @@ import * as OBF from '@thatopen/components-front';
 export class BimWorld {
   components: OBC.Components;
   world: OBC.SimpleWorld<OBC.SimpleScene, OBC.OrthoPerspectiveCamera, OBF.PostproductionRenderer>;
+  culler: OBC.MeshCullerRenderer;
 
   constructor(container: HTMLDivElement) {
     this.components = new OBC.Components();
@@ -65,6 +66,18 @@ export class BimWorld {
       secondarySize: 10
     });
     grid.visible = true;
+
+    // Inicializamos Cullers (Occlusion Culling) para optimización móvil
+    const cullers = this.components.get(OBC.Cullers);
+    this.culler = cullers.create(this.world);
+    cullers.enabled = true;
+
+    // Vinculamos la actualización de culling al movimiento de la cámara
+    this.world.camera.controls.addEventListener('control', () => {
+      if (cullers.enabled) {
+        this.culler.needsUpdate = true;
+      }
+    });
   }
 
   setGridVisible(visible: boolean) {
@@ -72,6 +85,24 @@ export class BimWorld {
     const grid = grids.list.get(this.world.uuid);
     if (grid) {
       grid.visible = visible;
+    }
+  }
+
+  setCullerEnabled(enabled: boolean) {
+    const cullers = this.components.get(OBC.Cullers);
+    cullers.enabled = enabled;
+    this.culler.enabled = enabled;
+    if (!enabled) {
+      // Forzar a mostrar todo si se desactiva
+      this.culler.preventUpdate = true;
+      this.world.scene.three.traverse((obj) => {
+        if (obj instanceof THREE.Mesh) {
+          obj.visible = true;
+        }
+      });
+    } else {
+      this.culler.preventUpdate = false;
+      this.culler.needsUpdate = true;
     }
   }
 

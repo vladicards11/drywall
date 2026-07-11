@@ -17,6 +17,7 @@ export class ModelNavigator {
   private highlighter: OBF.Highlighter;
   private hider: OBC.Hider;
   private fragmentsManager: OBC.FragmentsManager;
+  private markers: OBF.Marker;
 
   // Callback cuando el usuario selecciona un elemento
   private onElementSelectedCallback?: (props: ElementProperties | null) => void;
@@ -32,6 +33,7 @@ export class ModelNavigator {
     this.fragmentsManager = comps.get(OBC.FragmentsManager);
     this.hider = comps.get(OBC.Hider);
     this.highlighter = comps.get(OBF.Highlighter);
+    this.markers = comps.get(OBF.Marker);
 
     // Inicializamos el Highlighter interactivo
     this.highlighter.setup({
@@ -42,6 +44,9 @@ export class ModelNavigator {
       hoverEnabled: true,
       autoHighlightOnClick: true
     });
+
+    // Activamos la funcionalidad de marcadores por defecto
+    this.markers.enabled = true;
 
     // Suscribir eventos de selección
     this.setupHighlightEvents();
@@ -105,6 +110,131 @@ export class ModelNavigator {
     const idMap = this.categoryElementMaps.get(category.toUpperCase());
     if (idMap) {
       this.hider.set(visible, idMap);
+    }
+  }
+
+  /**
+   * Colorea elementos del modelo según su estado de avance físico.
+   * @param statusMap Mapa de ID de elemento (expressID o nombre de muro) al estado ('planificado' | 'estructurado' | 'cerrado' | 'terminado')
+   */
+  applyProgressColors(statusMap: Map<string | number, 'planificado' | 'estructurado' | 'cerrado' | 'terminado'>) {
+    // 1. Limpiar coloraciones previas
+    this.highlighter.clear("planificado");
+    this.highlighter.clear("estructurado");
+    this.highlighter.clear("cerrado");
+    this.highlighter.clear("terminado");
+
+    // 2. Colores correspondientes a cada estado (Slate, Orange, Cyan, Emerald)
+    const colors = {
+      planificado: new THREE.Color(0x64748b),  // Slate-500
+      estructurado: new THREE.Color(0xf59e0b), // Amber-500
+      cerrado: new THREE.Color(0x06b6d4),      // Cyan-500
+      terminado: new THREE.Color(0x10b981),     // Emerald-500
+    };
+
+    // 3. Registrar los estilos en el highlighter si no existen
+    for (const name of Object.keys(colors)) {
+      try {
+        this.highlighter.add(name, colors[name as keyof typeof colors]);
+      } catch (e) {
+        // Ya existe, podemos continuar
+      }
+    }
+
+    // 4. Agrupar los fragmentos por estado
+    const statusFragmentMaps: Record<string, FRAGS.FragmentIdMap> = {
+      planificado: {},
+      estructurado: {},
+      cerrado: {},
+      terminado: {},
+    };
+
+    // Recorremos todos los grupos de fragmentos cargados en el manager
+    for (const [, group] of this.fragmentsManager.groups) {
+      const props = group.getLocalProperties();
+      
+      for (const fragment of group.items) {
+        const fragID = fragment.id;
+
+        for (const expressID of fragment.ids) {
+          const propItem = props ? props[expressID] : null;
+          const nameVal = propItem?.Name?.value || `Elemento #${expressID}`;
+          
+          let matchedStatus: 'planificado' | 'estructurado' | 'cerrado' | 'terminado' | undefined;
+
+          // 1. Coincidencia por expressID
+          if (statusMap.has(expressID)) {
+            matchedStatus = statusMap.get(expressID);
+          } 
+          // 2. Coincidencia por nombre exacto o id de muro
+          else if (statusMap.has(nameVal)) {
+            matchedStatus = statusMap.get(nameVal);
+          } 
+          // 3. Coincidencia parcial de cadenas
+          else {
+            for (const [key, value] of statusMap.entries()) {
+              if (typeof key === 'string' && (nameVal.toLowerCase().includes(key.toLowerCase()) || key.toLowerCase().includes(nameVal.toLowerCase()))) {
+                matchedStatus = value;
+                break;
+              }
+            }
+          }
+
+          if (matchedStatus) {
+            const idMap = statusFragmentMaps[matchedStatus];
+            if (!idMap[fragID]) {
+              idMap[fragID] = new Set<number>();
+            }
+            idMap[fragID].add(expressID);
+          }
+        }
+      }
+    }
+
+    // 5. Aplicar los resaltados por ID a cada estado
+    for (const statusName of Object.keys(statusFragmentMaps)) {
+      const fragmentIdMap = statusFragmentMaps[statusName];
+      if (Object.keys(fragmentIdMap).length > 0) {
+        this.highlighter.highlightByID(statusName, fragmentIdMap, false, false);
+      }
+    }
+  }
+
+  /**
+   * Limpia todos los resaltados de estado físico.
+   */
+  clearProgressColors() {
+    const states = ["planificado", "estructurado", "cerrado", "terminado"];
+    for (const state of states) {
+      try {
+        this.highlighter.clear(state);
+      } catch (e) {
+        // Ignorar si el estilo/estado no ha sido registrado en el highlighter
+      }
+    }
+  }
+
+  /**
+   * Agrega una anotación 3D (pin) en el mundo en una coordenada específica.
+   */
+  createMarker(text: string, point: THREE.Vector3, isStatic = true): string | undefined {
+    return this.markers.create(this.bimWorld.world, text, point, isStatic);
+  }
+
+  /**
+   * Elimina un pin o anotación por su ID único.
+   */
+  deleteMarker(id: string) {
+    this.markers.delete(id);
+  }
+
+  /**
+   * Limpia todos los marcadores del mundo.
+   */
+  clearAllMarkers() {
+    const list = this.markers.getWorldMarkerList(this.bimWorld.world);
+    for (const key of Array.from(list.keys())) {
+      this.markers.delete(key);
     }
   }
 
@@ -199,6 +329,7 @@ export class ModelNavigator {
    */
   clear() {
     this.highlighter.clear();
+    this.clearProgressColors();
     if (this.onElementSelectedCallback) {
       this.onElementSelectedCallback(null);
     }

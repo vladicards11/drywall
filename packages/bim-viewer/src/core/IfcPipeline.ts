@@ -18,7 +18,7 @@ export class IfcPipeline {
   /**
    * Inicializa los cargadores y configura la ruta de web-ifc WASM.
    */
-  async init(wasmPath = 'https://unpkg.com/web-ifc@0.0.57/dist/') {
+  async init(wasmPath = '/web-ifc/') {
     // Configurar el IfcLoader
     await this.loader.setup();
     
@@ -31,8 +31,11 @@ export class IfcPipeline {
     this.fragments.onFragmentsLoaded.add((model) => {
       this.bimWorld.world.scene.three.add(model);
 
-      // Z-Fighting prevention: habilitar offsets en los materiales del modelo
+      // Z-Fighting prevention y Culling
       for (const fragment of model.items) {
+        // Culling
+        this.bimWorld.culler.add(fragment.mesh);
+
         const material = fragment.mesh.material;
         const materials = Array.isArray(material) ? material : [material];
         for (const mat of materials) {
@@ -41,6 +44,7 @@ export class IfcPipeline {
           mat.polygonOffsetFactor = Math.random();
         }
       }
+      this.bimWorld.culler.needsUpdate = true;
     });
   }
 

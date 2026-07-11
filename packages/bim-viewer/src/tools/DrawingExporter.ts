@@ -160,4 +160,199 @@ export class DrawingExporter {
     svg += '</svg>';
     return svg;
   }
+
+  /**
+   * Genera un plano DXF técnico con capas de colores (Red/Blue/Green/Yellow/Cyan) listo para importar en AutoCAD.
+   */
+  static generateTechnicalDxf(data: DrawingExportData): string {
+    const dxf: string[] = [];
+
+    // 1. Cabecera y Definición de Capas con Colores (AutoCAD Standard Colors)
+    dxf.push(
+      "  0", "SECTION",
+      "  2", "TABLES",
+      "  0", "TABLE",
+      "  2", "LAYER",
+      " 70", "5",
+      
+      // Capa Rieles (Azul = 5)
+      "  0", "LAYER",
+      "  2", "ESTRUCTURA_RIELES",
+      " 70", "0",
+      " 62", "5",
+      
+      // Capa Parantes (Rojo = 1)
+      "  0", "LAYER",
+      "  2", "ESTRUCTURA_PARANTES",
+      " 70", "0",
+      " 62", "1",
+      
+      // Capa Aberturas/Vanos (Celeste/Cyan = 4)
+      "  0", "LAYER",
+      "  2", "ABERTURAS",
+      " 70", "0",
+      " 62", "4",
+      
+      // Capa Cotas/Medidas (Verde = 3)
+      "  0", "LAYER",
+      "  2", "COTAS",
+      " 70", "0",
+      " 62", "3",
+      
+      // Capa Membrete/Marco (Amarillo = 2)
+      "  0", "LAYER",
+      "  2", "MEMBRETE",
+      " 70", "0",
+      " 62", "2",
+      
+      "  0", "ENDTAB",
+      "  0", "ENDSEC",
+      
+      // Sección de Entidades
+      "  0", "SECTION",
+      "  2", "ENTITIES"
+    );
+
+    // Helpers locales para escribir DXF
+    const addLine = (layer: string, x1: number, y1: number, x2: number, y2: number) => {
+      dxf.push(
+        "  0", "LINE",
+        "  8", layer,
+        " 10", x1.toFixed(3),
+        " 20", y1.toFixed(3),
+        " 30", "0.0",
+        " 11", x2.toFixed(3),
+        " 21", y2.toFixed(3),
+        " 31", "0.0"
+      );
+    };
+
+    const addRect = (layer: string, rx: number, ry: number, rw: number, rh: number) => {
+      addLine(layer, rx, ry, rx + rw, ry);
+      addLine(layer, rx + rw, ry, rx + rw, ry + rh);
+      addLine(layer, rx + rw, ry + rh, rx, ry + rh);
+      addLine(layer, rx, ry + rh, rx, ry);
+    };
+
+    const addText = (layer: string, val: string, tx: number, ty: number, h = 0.08) => {
+      dxf.push(
+        "  0", "TEXT",
+        "  8", layer,
+        " 10", tx.toFixed(3),
+        " 20", ty.toFixed(3),
+        " 30", "0.0",
+        " 40", h.toFixed(3),
+        "  1", val
+      );
+    };
+
+    // 2. Dibujar Marco y Borde Técnico
+    const pad = 0.50; // Margen de 50cm para cotas y membrete
+    const w = data.largo_m;
+    const h = data.alto_m;
+    
+    // Marco exterior en capa MEMBRETE
+    addRect("MEMBRETE", -pad, -pad, w + pad * 2, h + pad * 2);
+    // Borde interno de dibujo
+    addRect("MEMBRETE", -pad + 0.05, -pad + 0.05, w + pad * 2 - 0.10, h + pad * 2 - 0.10);
+
+    // 3. Rieles Solera (Inferior y Superior)
+    const trackH = 0.04;
+    addRect("ESTRUCTURA_RIELES", 0, 0, w, trackH);
+    addRect("ESTRUCTURA_RIELES", 0, h - trackH, w, trackH);
+
+    // 4. Parantes Verticales (Montantes)
+    const spacingM = data.distanciaParantes_cm / 100;
+    const studW = 0.04; // 4cm
+
+    let currentX = 0;
+    while (currentX <= w) {
+      // Omitir si cae dentro de un vano
+      const insideOpening = data.aberturas.some(ab => 
+        currentX >= ab.x && currentX <= (ab.x + ab.w)
+      );
+
+      if (!insideOpening || currentX === 0 || currentX >= (w - 0.05)) {
+        addRect("ESTRUCTURA_PARANTES", currentX, trackH, studW, h - trackH * 2);
+      }
+      currentX += spacingM;
+    }
+
+    // Parante de cierre final
+    const finalPosX = w - studW;
+    addRect("ESTRUCTURA_PARANTES", finalPosX, trackH, studW, h - trackH * 2);
+
+    // 5. Aberturas / Vanos y Refuerzos
+    data.aberturas.forEach((ab, idx) => {
+      // Hueco en capa ABERTURAS
+      addRect("ABERTURAS", ab.x, ab.y, ab.w, ab.h);
+      
+      // Refuerzos perimetrales del vano
+      // Dintel
+      addRect("ESTRUCTURA_RIELES", ab.x, ab.y + ab.h, ab.w, 0.04);
+      // Jambas
+      addRect("ESTRUCTURA_PARANTES", ab.x - studW, ab.y, studW, ab.h);
+      addRect("ESTRUCTURA_PARANTES", ab.x + ab.w, ab.y, studW, ab.h);
+      
+      // Si es ventana, antepecho
+      if (ab.tipo === "ventana") {
+        addRect("ESTRUCTURA_RIELES", ab.x, ab.y - 0.04, ab.w, 0.04);
+      }
+
+      // Textos del vano
+      addText("ABERTURAS", `${ab.tipo.toUpperCase()} #${idx + 1}`, ab.x + ab.w/2 - 0.20, ab.y + ab.h/2 + 0.05, 0.06);
+      addText("ABERTURAS", `${ab.w.toFixed(2)}x${ab.h.toFixed(2)}m`, ab.x + ab.w/2 - 0.20, ab.y + ab.h/2 - 0.05, 0.05);
+    });
+
+    // 6. Cotas / Acotaciones Constructivas (Líneas y texto)
+    // Cota de Largo General (Superior)
+    const cotaYTop = h + 0.25;
+    addLine("COTAS", 0, cotaYTop, w, cotaYTop);
+    addLine("COTAS", 0, cotaYTop - 0.05, 0, cotaYTop + 0.05);
+    addLine("COTAS", w, cotaYTop - 0.05, w, cotaYTop + 0.05);
+    addText("COTAS", `LARGO TOTAL: ${w.toFixed(2)} m`, w/2 - 0.40, cotaYTop + 0.06, 0.07);
+
+    // Cota de Alto General (Izquierda)
+    const cotaXLeft = -0.25;
+    addLine("COTAS", cotaXLeft, 0, cotaXLeft, h);
+    addLine("COTAS", cotaXLeft - 0.05, 0, cotaXLeft + 0.05, 0);
+    addLine("COTAS", cotaXLeft - 0.05, h, cotaXLeft + 0.05, h);
+    addText("COTAS", `ALTO TOTAL: ${h.toFixed(2)} m`, cotaXLeft - 0.12, h/2 - 0.30, 0.07);
+
+    // Cotas de modulación de parantes (Abajo)
+    currentX = spacingM;
+    while (currentX <= w) {
+      const prevX = currentX - spacingM;
+      const cotaYBottom = -0.25;
+      addLine("COTAS", prevX, cotaYBottom, currentX, cotaYBottom);
+      addLine("COTAS", prevX, cotaYBottom - 0.03, prevX, cotaYBottom + 0.03);
+      addLine("COTAS", currentX, cotaYBottom - 0.03, currentX, cotaYBottom + 0.03);
+      addText("COTAS", `${data.distanciaParantes_cm}cm`, prevX + spacingM/2 - 0.10, cotaYBottom + 0.05, 0.05);
+      currentX += spacingM;
+    }
+
+    // 7. Membrete Profesional (Esquina inferior derecha)
+    const mX = w + pad - 2.50;
+    const mY = -pad + 0.05;
+    const mW = 2.40;
+    const mH = 0.60;
+
+    addRect("MEMBRETE", mX, mY, mW, mH);
+    addLine("MEMBRETE", mX, mY + 0.25, mX + mW, mY + 0.25);
+    addLine("MEMBRETE", mX + 1.40, mY, mX + 1.40, mY + 0.25);
+
+    addText("MEMBRETE", "DRYWALL CALC STUDIO", mX + 0.10, mY + 0.35, 0.09);
+    addText("MEMBRETE", `PROYECTO: ${data.proyectoNombre}`, mX + 0.10, mY + 0.15, 0.05);
+    addText("MEMBRETE", `MURO: ${data.muroNombre}`, mX + 0.10, mY + 0.05, 0.05);
+    addText("MEMBRETE", `FECHA: ${new Date().toLocaleDateString()}`, mX + 1.50, mY + 0.15, 0.05);
+    addText("MEMBRETE", "ESCALA: 1:25", mX + 1.50, mY + 0.05, 0.05);
+
+    // 8. Cierre de Secciones
+    dxf.push(
+      "  0", "ENDSEC",
+      "  0", "EOF"
+    );
+
+    return dxf.join("\n");
+  }
 }
