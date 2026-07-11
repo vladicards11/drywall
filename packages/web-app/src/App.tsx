@@ -13,6 +13,8 @@ const App: React.FC = () => {
     currentForm,
     currentErrors,
     currentResultadoMuro,
+    selectedCielorrasoIdx,
+    currentCielorraso,
     state,
     errorMsg,
     resultado,
@@ -36,6 +38,12 @@ const App: React.FC = () => {
     calcular,
     compartir,
     reset,
+    // Cielorrasos
+    setSelectedCielorrasoIdx,
+    addCielorraso,
+    duplicarCielorraso,
+    removeCielorraso,
+    updateCielorrasoField,
     // Project management extensions
     historial,
     guardarEnHistorial,
@@ -50,6 +58,7 @@ const App: React.FC = () => {
   } = useProyecto();
 
   const [showIfcImporter, setShowIfcImporter] = useState(false);
+  const [activeElementTab, setActiveElementTab] = useState<'muros' | 'cielorrasos'>('muros');
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', width: '100vw' }}>
@@ -81,11 +90,23 @@ const App: React.FC = () => {
         onRemoveAbertura={(abIdx) => removeAbertura(selectedMuroIdx, abIdx)}
         onCalcular={calcular}
         onReset={reset}
+        // Cielorrasos props
+        cielorrasos={proyecto.cielorrasos || []}
+        selectedCielorrasoIdx={selectedCielorrasoIdx}
+        onSelectCielorraso={setSelectedCielorrasoIdx}
+        onAddCielorraso={addCielorraso}
+        onDuplicateCielorraso={duplicarCielorraso}
+        onRemoveCielorraso={removeCielorraso}
+        onCielorrasoFieldChange={(key, val) => updateCielorrasoField(selectedCielorrasoIdx, key, val)}
+        currentCielorraso={currentCielorraso}
+        activeElementTab={activeElementTab}
+        onChangeActiveElementTab={setActiveElementTab}
       />
       <MainPanel
         proyecto={proyecto}
         selectedMuroIdx={selectedMuroIdx}
         onSelectMuro={setSelectedMuroIdx}
+        selectedCielorrasoIdx={selectedCielorrasoIdx}
         resultado={resultado}
         currentResultadoMuro={currentResultadoMuro}
         totalPlacasConDesperdicio={totalPlacasConDesperdicio}
@@ -107,6 +128,9 @@ const App: React.FC = () => {
         onUpdateNivel={updateNivel}
         onRemoveNivel={removeNivel}
         resolvePisoMuro={resolvePisoMuro}
+        // Cielorraso preview props
+        currentCielorraso={currentCielorraso}
+        activeElementTab={activeElementTab}
       />
 
       {/* ---- Modal: Importador IFC ---- */}

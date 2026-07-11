@@ -9,8 +9,8 @@
   },
   "output_esperado": {
     "placas": { "cantidad_total": 6, "peso_total_kg": 218.88 },
-    "perfiles": { "montantes": 20, "rieles_barras": 3, "montantes_refuerzo_vanos": 0 },
-    "tornillos": { "placa_perfil": 576, "perfil_perfil": 80, "anclajes_losa": 18 },
+    "perfiles": { "montantes": 12, "rieles_barras": 3, "montantes_refuerzo_vanos": 0 },
+    "tornillos": { "placa_perfil": 576, "perfil_perfil": 128, "anclajes_losa": 18 },
     "cinta": { "ml_total": 13.44, "rollos": 1 },
     "masilla": { "kg_total": 11.52, "bolsas": 1 },
     "aislante": { "m2": 11.52, "paquetes": 1 },

@@ -13,6 +13,12 @@
       { "codigo": "R70", "ancho_mm": 70, "largo_barra_m": 3.00, "peso_kg_ml": 0.63 },
       { "codigo": "R90", "ancho_mm": 90, "largo_barra_m": 3.00, "peso_kg_ml": 0.75 }
     ],
+    "omega": [
+      { "codigo": "OMG38", "ancho_mm": 38, "largo_barra_m": 3.00, "peso_kg_ml": 0.35 }
+    ],
+    "angular": [
+      { "codigo": "ANG25", "ancho_mm": 25, "largo_barra_m": 3.00, "peso_kg_ml": 0.28 }
+    ],
     "separacion_montante_m_default": 0.40,
     "separaciones_permitidas_m": [0.40, 0.41, 0.60]
   },

@@ -1,12 +1,24 @@
 import { z } from "zod";
-import { Proyecto, Muro, Union, Abertura, Ambiente } from "./types.js";
+import { Proyecto, Muro, Union, Abertura, Ambiente, Cielorraso, Cenefa } from "./types.js";
 
 export const AberturaSchema: z.ZodType<Abertura> = z.object({
-  tipo: z.enum(["puerta", "ventana", "pase"]),
+  tipo: z.enum(["puerta", "ventana", "pase", "hornacina"]),
   ancho_m: z.number().positive(),
   alto_m: z.number().positive(),
   distancia_desde_inicio_m: z.number().nonnegative(),
-});
+  profundidad_m: z.number().positive().optional(),
+  altura_desde_piso_m: z.number().nonnegative().optional(),
+}).refine(
+  (a) => {
+    if (a.tipo === "hornacina") {
+      return a.profundidad_m !== undefined && a.altura_desde_piso_m !== undefined;
+    }
+    return true;
+  },
+  {
+    message: "Si la abertura es de tipo hornacina, se requieren las propiedades profundidad_m y altura_desde_piso_m",
+  }
+);
 
 export const MuroSchema: z.ZodType<Muro> = z.object({
   id: z.string(),
@@ -80,10 +92,76 @@ export const AmbienteSchema: z.ZodType<Ambiente> = z.object({
   muros: z.array(z.string()),
 });
 
+export const CielorrasoSchema: z.ZodType<Cielorraso> = z.object({
+  id: z.string(),
+  geometria: z.object({
+    largo_m: z.number().positive(),
+    ancho_m: z.number().positive(),
+  }),
+  sistema: z.object({
+    tipo_estructura: z.enum(["omega", "suspendido"]),
+    perfil_secundario: z.string(),
+    perfil_principal: z.string().optional(),
+    perfil_perimetral: z.string(),
+    separacion_secundario_m: z.number().positive(),
+    separacion_principal_m: z.number().positive().optional(),
+    distancia_cuelgue_m: z.number().positive().optional(),
+    altura_suspension_m: z.number().nonnegative(),
+  }),
+  placa: z.object({
+    tipo: z.string(),
+    espesor_mm: z.number().positive(),
+    formato_m: z.tuple([z.number().positive(), z.number().positive()]),
+    orientacion: z.enum(["vertical", "horizontal"]),
+  }),
+  aislante: z.object({
+    tipo: z.string(),
+    espesor_mm: z.number().positive(),
+  }).optional(),
+}).refine(
+  (cie) => {
+    if (cie.sistema.tipo_estructura === "suspendido") {
+      return (
+        cie.sistema.perfil_principal !== undefined &&
+        cie.sistema.separacion_principal_m !== undefined &&
+        cie.sistema.distancia_cuelgue_m !== undefined
+      );
+    }
+    return true;
+  },
+  {
+    message:
+      "Si la estructura es suspendida, se deben definir perfil_principal, separacion_principal_m y distancia_cuelgue_m",
+  }
+);
+
+export const CenefaSchema: z.ZodType<Cenefa> = z.object({
+  id: z.string(),
+  tipo: z.enum(["adosada", "isla"]),
+  geometria: z.object({
+    longitud_m: z.number().positive(),
+    ancho_cajon_m: z.number().positive(),
+    alto_cajon_m: z.number().positive(),
+    aleta_luz_m: z.number().nonnegative(),
+  }),
+  sistema: z.object({
+    perfil_secundario: z.string(),
+    perfil_perimetral: z.string(),
+    separacion_secundario_m: z.number().positive(),
+  }),
+  placa: z.object({
+    tipo: z.string(),
+    espesor_mm: z.number().positive(),
+    formato_m: z.tuple([z.number().positive(), z.number().positive()]),
+  }),
+});
+
 export const ProyectoSchema: z.ZodType<Proyecto> = z.object({
   proyecto: z.string(),
   catalogo: z.string(),
   elementos: z.array(MuroSchema),
   uniones: z.array(UnionSchema),
   ambientes: z.array(AmbienteSchema).optional(),
+  cielorrasos: z.array(CielorrasoSchema).optional(),
+  cenefas: z.array(CenefaSchema).optional(),
 });

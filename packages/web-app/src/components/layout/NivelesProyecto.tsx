@@ -10,7 +10,7 @@
  *
  * Los muros sin storey IFC se asignan automáticamente al nivel cuyo rango los contiene.
  */
-import React, { useState } from 'react';
+import { useState } from 'react';
 import type { NivelProyecto } from '../../hooks/useProyecto';
 
 interface Props {

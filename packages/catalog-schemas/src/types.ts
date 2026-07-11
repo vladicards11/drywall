@@ -27,6 +27,8 @@ export interface Catalogo {
   perfiles: {
     montante: CatalogoPerfil[];
     riel: CatalogoPerfil[];
+    omega?: CatalogoPerfil[];
+    angular?: CatalogoPerfil[];
     separacion_montante_m_default: number;
     separaciones_permitidas_m: number[];
   };
@@ -57,10 +59,12 @@ export interface Catalogo {
 }
 
 export interface Abertura {
-  tipo: "puerta" | "ventana" | "pase";
+  tipo: "puerta" | "ventana" | "pase" | "hornacina";
   ancho_m: number;
   alto_m: number;
   distancia_desde_inicio_m: number;
+  profundidad_m?: number;
+  altura_desde_piso_m?: number;
 }
 
 export interface Muro {
@@ -102,12 +106,121 @@ export interface Ambiente {
   muros: string[];
 }
 
+export interface Cielorraso {
+  id: string;
+  geometria: {
+    largo_m: number;
+    ancho_m: number;
+  };
+  sistema: {
+    tipo_estructura: "omega" | "suspendido";
+    perfil_secundario: string;
+    perfil_principal?: string;
+    perfil_perimetral: string;
+    separacion_secundario_m: number;
+    separacion_principal_m?: number;
+    distancia_cuelgue_m?: number;
+    altura_suspension_m: number;
+  };
+  placa: {
+    tipo: string;
+    espesor_mm: number;
+    formato_m: [number, number];
+    orientacion: "vertical" | "horizontal";
+  };
+  aislante?: {
+    tipo: string;
+    espesor_mm: number;
+  };
+}
+
+export interface ResultadoCielorraso {
+  cielorraso_id: string;
+  placas: { cantidad_total: number; peso_total_kg: number; detalle: PlacaRect[] };
+  perfiles: {
+    secundarios_barras: number;
+    principales_barras: number;
+    perimetrales_barras: number;
+  };
+  colgadores: {
+    cantidad_total: number;
+    alambre_ml: number;
+  };
+  tornillos: {
+    placa_perfil: number;
+    perfil_perfil: number;
+    anclajes_losa: number;
+    anclajes_pared: number;
+  };
+  cinta: { ml_total: number; rollos: number };
+  masilla: { kg_total: number; bolsas: number };
+  aislante: { m2: number; paquetes: number };
+  trazabilidad: string[];
+  nesting_secundarios?: ResultadoNesting1D;
+  nesting_principales?: ResultadoNesting1D;
+  nesting_perimetrales?: ResultadoNesting1D;
+}
+
+export interface Cenefa {
+  id: string;
+  tipo: "adosada" | "isla";
+  geometria: {
+    longitud_m: number;
+    ancho_cajon_m: number;
+    alto_cajon_m: number;
+    aleta_luz_m: number;
+  };
+  sistema: {
+    perfil_secundario: string;
+    perfil_perimetral: string;
+    separacion_secundario_m: number;
+  };
+  placa: {
+    tipo: string;
+    espesor_mm: number;
+    formato_m: [number, number];
+  };
+}
+
+export interface ResultadoCenefa {
+  cenefa_id: string;
+  placas: { cantidad_total: number; peso_total_kg: number };
+  perfiles: {
+    secundarios_barras: number;
+    perimetrales_barras: number;
+  };
+  tornillos: {
+    placa_perfil: number;
+    perfil_perfil: number;
+    anclajes_losa: number;
+    anclajes_pared: number;
+  };
+  cinta: { ml_total: number; rollos: number };
+  masilla: { kg_total: number; bolsas: number };
+  esquineros: { ml_total: number };
+  trazabilidad: string[];
+  nesting_secundarios?: ResultadoNesting1D;
+  nesting_perimetrales?: ResultadoNesting1D;
+  retazos_reutilizados?: Retazo2D[];
+}
+
 export interface Proyecto {
   proyecto: string;
   catalogo: string;
   elementos: Muro[];
   uniones: Union[];
   ambientes?: Ambiente[];
+  cielorrasos?: Cielorraso[];
+  cenefas?: Cenefa[];
+}
+
+export interface Retazo2D {
+  id: string;
+  ancho_m: number;
+  alto_m: number;
+  placa_tipo: string;
+  espesor_mm: number;
+  origen_elemento_id: string;
 }
 
 export interface PlacaRect {
@@ -120,6 +233,31 @@ export interface PlacaRect {
   capa: number;
   recortada: boolean;
   anguloCorte?: number;
+  corteL?: boolean;
+  esRetazoReutilizado?: boolean;
+  retazoOrigenId?: string;
+}
+
+export interface Corte1D {
+  id: string;
+  longitud_m: number;
+  descripcion: string;
+}
+
+export interface Barra1D {
+  id: number;
+  cortes: Corte1D[];
+  longitud_usada_m: number;
+  remanente_m: number;
+}
+
+export interface ResultadoNesting1D {
+  barras: Barra1D[];
+  cantidad_barras: number;
+  longitud_total_cortes_m: number;
+  longitud_total_comercial_m: number;
+  desperdicio_lineal_m: number;
+  desperdicio_pct: number;
 }
 
 export interface JuntaSegmento {
@@ -137,6 +275,8 @@ export interface ResultadoPerfiles {
   rieles_barras: number;
   montantes_refuerzo_vanos: number;
   montantes_union: number;
+  nesting_montantes?: ResultadoNesting1D;
+  nesting_rieles?: ResultadoNesting1D;
 }
 
 export interface ResultadoTornillos {
@@ -160,6 +300,8 @@ export interface ResultadoMuro {
   aislante: { m2: number; paquetes: number };
   esquineros: { ml_total: number };
   trazabilidad: string[];
+  retazos_generados?: Retazo2D[];
+  retazos_reutilizados?: Retazo2D[];
 }
 
 export interface ResultadoAmbiente {
@@ -180,6 +322,10 @@ export interface ResultadoAmbiente {
 export interface ResultadoProyecto {
   proyecto: string;
   muros: ResultadoMuro[];
+  cielorrasos?: ResultadoCielorraso[];
+  cenefas?: ResultadoCenefa[];
+  retazos_disponibles?: Retazo2D[];
+  retazos_reutilizados?: Retazo2D[];
   totales: {
     placas: { cantidad_total: number; peso_total_kg: number };
     perfiles: ResultadoPerfiles;
@@ -188,6 +334,18 @@ export interface ResultadoProyecto {
     masilla: { kg_total: number; bolsas: number };
     aislante: { m2: number; paquetes: number };
     esquineros: { ml_total: number };
+    cielorraso?: {
+      secundarios: number;
+      principales: number;
+      perimetrales: number;
+      colgadores: number;
+      alambre_ml: number;
+    };
+    cenefa?: {
+      secundarios: number;
+      perimetrales: number;
+      esquineros_ml: number;
+    };
   };
   por_ambiente?: ResultadoAmbiente[];
 }

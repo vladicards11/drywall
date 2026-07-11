@@ -19,6 +19,13 @@ export function calcularEsquineros(
     }
   }
 
+  // Esquineros de los filos frontales expuestos de las hornacinas/nichos
+  for (const ab of muro.aberturas) {
+    if (ab.tipo === "hornacina") {
+      mlTotal += 2 * (ab.ancho_m + ab.alto_m);
+    }
+  }
+
   return {
     ml_total: roundFloat(mlTotal),
   };

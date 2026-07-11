@@ -2,18 +2,25 @@ import React, { useEffect, useRef, useState } from 'react';
 import { BimWorld, IfcPipeline, MeasureTools, ViewsManager, DrawingExporter, ModelNavigator, StructureGenerator } from '@drywall-calc/bim-viewer';
 import type { MeasureMode, View2DType, ElementProperties } from '@drywall-calc/bim-viewer';
 import type { ProyectoFormData } from '../../hooks/useProyecto';
+import type { ResultadoProyecto } from '@drywall-calc/catalog-schemas';
 import styles from './BimViewer.module.css';
 
 interface BimViewerProps {
   proyecto?: ProyectoFormData;
+  resultado?: ResultadoProyecto | null;
   selectedMuroIdx?: number;
   onImportarMurosDirecto?: (muros: any[]) => void;
+  selectedCielorrasoIdx?: number;
+  activeElementTab?: 'muros' | 'cielorrasos';
 }
 
 export const BimViewer: React.FC<BimViewerProps> = ({ 
   proyecto, 
+  resultado,
   selectedMuroIdx = 0,
-  onImportarMurosDirecto
+  onImportarMurosDirecto,
+  selectedCielorrasoIdx = 0,
+  activeElementTab = 'muros'
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -35,6 +42,8 @@ export const BimViewer: React.FC<BimViewerProps> = ({
   const [activeView, setActiveView] = useState<View2DType>('perspective');
   const [isGridVisible, setIsGridVisible] = useState(true);
   const [isClippingActive, setIsClippingActive] = useState(false);
+  const [showPlacas, setShowPlacas] = useState(true);
+  const [showEstructura, setShowEstructura] = useState(true);
 
   // Estados para filtros e inspección IFC
   const [selectedProps, setSelectedProps] = useState<ElementProperties | null>(null);
@@ -122,6 +131,13 @@ export const BimViewer: React.FC<BimViewerProps> = ({
     };
   }, []);
 
+  // Actualizar visibilidad de capas en el structureGenerator
+  useEffect(() => {
+    if (structureGenerator && isShowing3DStructure) {
+      structureGenerator.setVisibility(showPlacas, showEstructura);
+    }
+  }, [showPlacas, showEstructura, isShowing3DStructure, structureGenerator]);
+
   // Cambiar modo de medición desde botones
   const handleToggleMeasure = (mode: MeasureMode) => {
     if (!measureTools) return;
@@ -192,44 +208,84 @@ export const BimViewer: React.FC<BimViewerProps> = ({
 
   // Modelar la estructura Drywall (perfiles y placas) calculada en 3D
   const handleGenerate3DStructure = () => {
-    if (!structureGenerator || !proyecto || !proyecto.muros || proyecto.muros.length === 0) {
-      alert("No hay muros configurados para modelar en 3D.");
-      return;
+    if (!structureGenerator || !proyecto) return;
+
+    if (activeElementTab === 'cielorrasos') {
+      const cie = proyecto.cielorrasos?.[selectedCielorrasoIdx];
+      if (!cie) {
+        alert("No hay cielorraso configurado para modelar en 3D.");
+        return;
+      }
+
+      // Limpiar modelo previo
+      if (pipeline) pipeline.clear();
+      if (modelNavigator) modelNavigator.clear();
+
+      setIsLoading(true);
+      setTimeout(() => {
+        structureGenerator.generateCielorraso({
+          largo_m: parseFloat(cie.largo_m) || 4.0,
+          ancho_m: parseFloat(cie.ancho_m) || 4.0,
+          tipo_estructura: cie.tipo_estructura,
+          separacion_secundario_m: cie.separacion_secundario_m,
+          separacion_principal_m: cie.separacion_principal_m,
+          distancia_cuelgue_m: cie.distancia_cuelgue_m,
+          altura_suspension_m: parseFloat(cie.altura_suspension_m) || 0.50,
+          espesorPerfil_m: 0.038
+        });
+
+        // Aplicar filtros de capas actuales
+        structureGenerator.setVisibility(showPlacas, showEstructura);
+
+        setIsShowing3DStructure(true);
+        setHasModel(true);
+        setIsLoading(false);
+      }, 300);
+
+    } else {
+      if (!proyecto.muros || proyecto.muros.length === 0) {
+        alert("No hay muros configurados para modelar en 3D.");
+        return;
+      }
+
+      const muro = proyecto.muros[selectedMuroIdx] || proyecto.muros[0];
+      const separacionMontante = Number(muro.separacion_montante_m) || 0.40;
+
+      // Obtener espesor real del perfil
+      const espesorStr = muro.perfil.replace(/\D/g, ''); // Extrae números (ej: P89 -> 89)
+      const espesor = espesorStr ? parseInt(espesorStr) / 1000 : 0.089;
+
+      // Limpiar modelo IFC previo del visualizador para ver únicamente la maqueta estructural
+      if (pipeline) pipeline.clear();
+      if (modelNavigator) modelNavigator.clear();
+
+      const aberturasMapeadas = (muro.aberturas || []).map((ab: any) => ({
+        x: Number(ab.distancia_desde_inicio_m) || 0,
+        y: ab.tipo === 'ventana' ? 1.0 : 0,
+        w: Number(ab.ancho_m) || 0.8,
+        h: Number(ab.alto_m) || 2.0,
+        tipo: (ab.tipo || 'pase') as 'puerta' | 'ventana' | 'pase'
+      }));
+
+      setIsLoading(true);
+      setTimeout(() => {
+        structureGenerator.generate({
+          largo_m: parseFloat(muro.largo_m) || 3.0,
+          alto_m: parseFloat(muro.alto_m) || 2.6,
+          separacionParantes_m: separacionMontante,
+          espesorPerfil_m: espesor,
+          aberturas: aberturasMapeadas,
+          placas: resultado?.muros[selectedMuroIdx]?.placas?.detalle || []
+        });
+
+        // Aplicar filtros de capas actuales
+        structureGenerator.setVisibility(showPlacas, showEstructura);
+
+        setIsShowing3DStructure(true);
+        setHasModel(true);
+        setIsLoading(false);
+      }, 300);
     }
-
-    const muro = proyecto.muros[selectedMuroIdx] || proyecto.muros[0];
-    const separacionMontante = Number(muro.separacion_montante_m) || 0.40;
-
-    // Obtener espesor real del perfil
-    const espesorStr = muro.perfil.replace(/\D/g, ''); // Extrae números (ej: P89 -> 89)
-    const espesor = espesorStr ? parseInt(espesorStr) / 1000 : 0.089;
-
-    // Limpiar modelo IFC previo del visualizador para ver únicamente la maqueta estructural
-    if (pipeline) pipeline.clear();
-    if (modelNavigator) modelNavigator.clear();
-
-    const aberturasMapeadas = (muro.aberturas || []).map((ab: any) => ({
-      x: Number(ab.distancia_desde_inicio_m) || 0,
-      y: ab.tipo === 'ventana' ? 1.0 : 0,
-      w: Number(ab.ancho_m) || 0.8,
-      h: Number(ab.alto_m) || 2.0,
-      tipo: (ab.tipo || 'pase') as 'puerta' | 'ventana' | 'pase'
-    }));
-
-    setIsLoading(true);
-    setTimeout(() => {
-      structureGenerator.generate({
-        largo_m: parseFloat(muro.largo_m) || 3.0,
-        alto_m: parseFloat(muro.alto_m) || 2.6,
-        separacionParantes_m: separacionMontante,
-        espesorPerfil_m: espesor,
-        aberturas: aberturasMapeadas
-      });
-
-      setIsShowing3DStructure(true);
-      setHasModel(true);
-      setIsLoading(false);
-    }, 300);
   };
 
   // Volver a la carga normal del visor (limpiar la estructura Drywall 3D)
@@ -578,21 +634,21 @@ export const BimViewer: React.FC<BimViewerProps> = ({
             title="Planta (Vista superior)"
             onClick={() => handleSetView('top')}
           >
-            平面
+            PLA
           </button>
           <button 
             className={`${styles.toolButton} ${activeView === 'front' ? styles.toolButtonActive : ''}`} 
             title="Elevación Frontal"
             onClick={() => handleSetView('front')}
           >
-            立面
+            ALZ
           </button>
           <button 
             className={`${styles.toolButton} ${activeView === 'side' ? styles.toolButtonActive : ''}`} 
             title="Elevación Lateral"
             onClick={() => handleSetView('side')}
           >
-            侧面
+            LAT
           </button>
 
           <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
@@ -632,6 +688,49 @@ export const BimViewer: React.FC<BimViewerProps> = ({
           </button>
 
           <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
+
+          {/* Filtros interactivos de capas */}
+          {isShowing3DStructure && (
+            <>
+              <button 
+                className={`${styles.toolButton}`}
+                title="Mostrar/Ocultar Estructura Metálica (Parantes, Rieles, Colgadores)"
+                style={{ 
+                  background: showEstructura ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.03)',
+                  border: showEstructura ? '1px solid #6366f1' : '1px solid rgba(255,255,255,0.08)',
+                  color: showEstructura ? '#818cf8' : '#64748b',
+                  fontSize: '0.72rem',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.2rem',
+                  padding: '0 0.5rem'
+                }}
+                onClick={() => setShowEstructura(!showEstructura)}
+              >
+                ⚙️ Estructura
+              </button>
+              <button 
+                className={`${styles.toolButton}`}
+                title="Mostrar/Ocultar Placas de Yeso"
+                style={{ 
+                  background: showPlacas ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.03)',
+                  border: showPlacas ? '1px solid #10b981' : '1px solid rgba(255,255,255,0.08)',
+                  color: showPlacas ? '#34d399' : '#64748b',
+                  fontSize: '0.72rem',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.2rem',
+                  padding: '0 0.5rem'
+                }}
+                onClick={() => setShowPlacas(!showPlacas)}
+              >
+                📄 Placas
+              </button>
+              <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
+            </>
+          )}
 
           {/* Botones de Estructura Drywall & Exportador CAD */}
           <button 

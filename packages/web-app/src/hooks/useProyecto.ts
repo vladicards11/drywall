@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { calcularProyecto } from '@drywall-calc/core-engine';
 import { obtenerCatalogo, obtenerCatalogoGenericoEstandar, cargarCatalogo } from '@drywall-calc/catalog-schemas';
-import type { Muro, Union, ResultadoProyecto, ResultadoMuro, Abertura, Catalogo } from '@drywall-calc/catalog-schemas';
+import type { Muro, Union, ResultadoProyecto, ResultadoMuro, Abertura, Catalogo, Cielorraso } from '@drywall-calc/catalog-schemas';
 import type { MuroFormData, FormErrors } from './useCalculadora';
 import { DEFAULT_FORM, validateForm } from './useCalculadora';
 
@@ -30,6 +30,27 @@ export interface UnionFormData {
   angulo_grados: number;
 }
 
+export interface CielorrasoFormData {
+  id: string;
+  nombre: string;
+  largo_m: string;
+  ancho_m: string;
+  tipo_estructura: "omega" | "suspendido";
+  perfil_secundario: string;
+  perfil_principal: string;
+  perfil_perimetral: string;
+  separacion_secundario_m: number;
+  separacion_principal_m: number;
+  distancia_cuelgue_m: number;
+  altura_suspension_m: string;
+  placa_tipo: string;
+  placa_espesor_mm: number;
+  placa_formato: string;
+  placa_orientacion: "vertical" | "horizontal";
+  aislante_tipo: string;
+  aislante_espesor_mm: number;
+}
+
 // ---- Project-level form data ----
 export interface ProyectoFormData {
   nombre: string;
@@ -37,6 +58,7 @@ export interface ProyectoFormData {
   catalogo_custom?: Catalogo; // Overrides when using custom catalog editor
   muros: MuroFormData[];
   uniones: UnionFormData[];
+  cielorrasos?: CielorrasoFormData[];
   factor_desperdicio_pct: number; // 0–30, default from catalogo
   /**
    * Definición manual de los pisos/niveles del proyecto.
@@ -50,11 +72,35 @@ export type ProyectoCalculationState = 'idle' | 'calculating' | 'done' | 'error'
 
 const catalogoDefault = obtenerCatalogoGenericoEstandar();
 
+export const DEFAULT_CIELORRASO = (cat: Catalogo, idx: number): CielorrasoFormData => ({
+  id: `cielorraso_${idx}`,
+  nombre: `Cielorraso #${idx + 1}`,
+  largo_m: '4.00',
+  ancho_m: '4.00',
+  tipo_estructura: 'omega',
+  perfil_secundario: cat.perfiles.omega?.[0]?.codigo || 'OMG38',
+  perfil_principal: cat.perfiles.montante[0]?.codigo || 'M48',
+  perfil_perimetral: cat.perfiles.angular?.[0]?.codigo || 'ANG25',
+  separacion_secundario_m: 0.40,
+  separacion_principal_m: 1.00,
+  distancia_cuelgue_m: 1.20,
+  altura_suspension_m: '0.50',
+  placa_tipo: cat.placas[0]?.tipo || 'ST',
+  placa_espesor_mm: cat.placas[0]?.espesor_mm || 12.5,
+  placa_formato: cat.placas[0]
+    ? `${cat.placas[0].formatos_m[0][0]}x${cat.placas[0].formatos_m[0][1]}`
+    : '1.20x2.40',
+  placa_orientacion: 'vertical',
+  aislante_tipo: 'ninguno',
+  aislante_espesor_mm: 50
+});
+
 const DEFAULT_PROYECTO: ProyectoFormData = {
   nombre: 'Proyecto sin nombre',
   catalogo_sistema: 'generico_estandar',
   muros: [{ ...DEFAULT_FORM }],
   uniones: [],
+  cielorrasos: [],
   factor_desperdicio_pct: Math.round(catalogoDefault.factor_desperdicio_placas_default * 100),
   nivelesProyecto: [], // vacío por defecto — el usuario los configura o vienen del IFC
 };
@@ -101,6 +147,36 @@ function formToUnion(u: UnionFormData): Union {
       resetear_perfiles: false,
       perfiles_simetricos: true,
     },
+  };
+}
+
+function formToCielorraso(form: CielorrasoFormData): Cielorraso {
+  return {
+    id: form.id,
+    geometria: {
+      largo_m: parseFloat(form.largo_m) || 4.00,
+      ancho_m: parseFloat(form.ancho_m) || 4.00,
+    },
+    sistema: {
+      tipo_estructura: form.tipo_estructura,
+      perfil_secundario: form.perfil_secundario,
+      perfil_principal: form.tipo_estructura === 'suspendido' ? form.perfil_principal : undefined,
+      perfil_perimetral: form.perfil_perimetral,
+      separacion_secundario_m: form.separacion_secundario_m,
+      separacion_principal_m: form.tipo_estructura === 'suspendido' ? form.separacion_principal_m : undefined,
+      distancia_cuelgue_m: form.tipo_estructura === 'suspendido' ? form.distancia_cuelgue_m : undefined,
+      altura_suspension_m: parseFloat(form.altura_suspension_m) || 0.50,
+    },
+    placa: {
+      tipo: form.placa_tipo,
+      espesor_mm: form.placa_espesor_mm,
+      formato_m: parseFormato(form.placa_formato),
+      orientacion: form.placa_orientacion,
+    },
+    aislante: form.aislante_tipo !== 'ninguno' ? {
+      tipo: form.aislante_tipo,
+      espesor_mm: form.aislante_espesor_mm,
+    } : undefined,
   };
 }
 
@@ -180,6 +256,7 @@ export function useProyecto() {
     return [];
   });
   const [selectedMuroIdx, setSelectedMuroIdx] = useState<number>(0);
+  const [selectedCielorrasoIdx, setSelectedCielorrasoIdx] = useState<number>(0);
   const [errors, setErrors] = useState<FormErrors[]>([{}]);
   const [state, setState] = useState<ProyectoCalculationState>('idle');
   const [errorMsg, setErrorMsg] = useState<string>('');
@@ -269,6 +346,55 @@ export function useProyecto() {
     });
     setState('idle');
   }, []);
+
+  // ---- Cielorraso CRUD ----
+  const addCielorraso = useCallback(() => {
+    setProyecto((prev) => {
+      const idx = prev.cielorrasos ? prev.cielorrasos.length : 0;
+      const newCie = DEFAULT_CIELORRASO(catalogo, idx);
+      const newCielorrasos = prev.cielorrasos ? [...prev.cielorrasos, newCie] : [newCie];
+      setSelectedCielorrasoIdx(newCielorrasos.length - 1);
+      return { ...prev, cielorrasos: newCielorrasos };
+    });
+    setState('idle');
+  }, [catalogo]);
+
+  const duplicarCielorraso = useCallback((idx: number) => {
+    setProyecto((prev) => {
+      if (!prev.cielorrasos) return prev;
+      const src = prev.cielorrasos[idx];
+      if (!src) return prev;
+      const nextIdx = prev.cielorrasos.length;
+      const newCie = { ...src, id: `cielorraso_${nextIdx}`, nombre: `${src.nombre} (Copia)` };
+      const newCielorrasos = [...prev.cielorrasos.slice(0, idx + 1), newCie, ...prev.cielorrasos.slice(idx + 1)];
+      setSelectedCielorrasoIdx(idx + 1);
+      return { ...prev, cielorrasos: newCielorrasos };
+    });
+    setState('idle');
+  }, []);
+
+  const removeCielorraso = useCallback((idx: number) => {
+    setProyecto((prev) => {
+      if (!prev.cielorrasos || prev.cielorrasos.length === 0) return prev;
+      const newCielorrasos = prev.cielorrasos.filter((_, i) => i !== idx);
+      setSelectedCielorrasoIdx((s) => Math.max(0, Math.min(s, newCielorrasos.length - 1)));
+      return { ...prev, cielorrasos: newCielorrasos };
+    });
+    setState('idle');
+  }, []);
+
+  const updateCielorrasoField = useCallback(
+    <K extends keyof CielorrasoFormData>(idx: number, key: K, value: CielorrasoFormData[K]) => {
+      setProyecto((prev) => {
+        if (!prev.cielorrasos) return prev;
+        const newCielorrasos = [...prev.cielorrasos];
+        newCielorrasos[idx] = { ...newCielorrasos[idx], [key]: value };
+        return { ...prev, cielorrasos: newCielorrasos };
+      });
+      setState('idle');
+    },
+    []
+  );
 
   // ---- Importar muros desde IFC ----
   const importarDesdeIFC = useCallback((
@@ -363,8 +489,8 @@ export function useProyecto() {
       // Si no es por defecto, unimos a las uniones ya existentes
       const unionesCombinadas = esSoloPorDefecto ? nuevasUniones : [...prev.uniones, ...nuevasUniones];
 
-      return { 
-        ...prev, 
+      return {
+        ...prev,
         muros: murosCombinados,
         uniones: unionesCombinadas
       };
@@ -519,6 +645,7 @@ export function useProyecto() {
       });
 
       const unionesDomain: Union[] = proyecto.uniones.map(formToUnion);
+      const cielorrasosDomain = (proyecto.cielorrasos || []).map(formToCielorraso);
 
       // Build the Proyecto domain object
       const proyectoDomain = {
@@ -526,6 +653,7 @@ export function useProyecto() {
         catalogo: proyecto.catalogo_sistema,
         elementos: murosDomain,
         uniones: unionesDomain,
+        cielorrasos: cielorrasosDomain,
       };
 
       const res = calcularProyecto(proyectoDomain, catalogo);
@@ -535,7 +663,7 @@ export function useProyecto() {
       setErrorMsg(err instanceof Error ? err.message : String(err));
       setState('error');
     }
-  }, [proyecto]);
+  }, [proyecto, catalogo]);
 
   // Auto-calculo si hay estado en URL
   useEffect(() => {
@@ -553,7 +681,7 @@ export function useProyecto() {
   const compartir = useCallback(() => {
     const serialized = serializeProyecto(proyecto);
     const shareUrl = `${window.location.origin}${window.location.pathname}?proyecto=${serialized}`;
-    navigator.clipboard.writeText(shareUrl).catch(() => {});
+    navigator.clipboard.writeText(shareUrl).catch(() => { });
     return shareUrl;
   }, [proyecto]);
 
@@ -693,6 +821,10 @@ export function useProyecto() {
   const currentResultadoMuro: ResultadoMuro | null =
     resultado?.muros[selectedMuroIdx] ?? null;
 
+  const currentCielorraso = proyecto.cielorrasos && proyecto.cielorrasos[selectedCielorrasoIdx]
+    ? proyecto.cielorrasos[selectedCielorrasoIdx]
+    : null;
+
   // Aplicar factor de desperdicio al total de placas
   const factor = proyecto.factor_desperdicio_pct / 100;
   const totalPlacasNeto = resultado?.totales.placas.cantidad_total ?? 0;
@@ -704,6 +836,8 @@ export function useProyecto() {
     currentForm,
     currentErrors,
     currentResultadoMuro,
+    selectedCielorrasoIdx,
+    currentCielorraso,
     errors,
     state,
     errorMsg,
@@ -730,6 +864,12 @@ export function useProyecto() {
     calcular,
     compartir,
     reset,
+    // Cielorrasos Actions
+    setSelectedCielorrasoIdx,
+    addCielorraso,
+    duplicarCielorraso,
+    removeCielorraso,
+    updateCielorrasoField,
     // Project management extensions
     historial,
     guardarEnHistorial,

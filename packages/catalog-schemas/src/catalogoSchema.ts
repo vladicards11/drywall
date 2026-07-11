@@ -30,6 +30,8 @@ export const CatalogoSchema: z.ZodType<Catalogo> = z.object({
   perfiles: z.object({
     montante: z.array(CatalogoPerfilSchema),
     riel: z.array(CatalogoPerfilSchema),
+    omega: z.array(CatalogoPerfilSchema).optional(),
+    angular: z.array(CatalogoPerfilSchema).optional(),
     separacion_montante_m_default: z.number().positive(),
     separaciones_permitidas_m: z.array(z.number().positive()),
   }),

@@ -1,8 +1,9 @@
-import { Muro, Union, Catalogo, ResultadoMuro } from "@drywall-calc/catalog-schemas";
+import { Muro, Union, Catalogo, ResultadoMuro, PlacaRect, Retazo2D } from "@drywall-calc/catalog-schemas";
 import { MuroSchema } from "@drywall-calc/catalog-schemas";
 import { generarGrillaPlacas } from "./nesting/generarGrillaPlacas.js";
 import { aplicarAberturas } from "./nesting/aplicarAberturas.js";
 import { extraerJuntas } from "./nesting/extraerJuntas.js";
+import { aplicarCortesL, extraerRetazosDeAberturas, optimizarReutilizacionRetazos, DemandaPlaca } from "./calculo/nesting2D.js";
 import { calcularPerfiles } from "./calculo/perfiles.js";
 import { calcularTornilleria } from "./calculo/tornilleria.js";
 import { calcularCintaMasilla } from "./calculo/cintaMasilla.js";
@@ -38,21 +39,21 @@ export function calcularMuro(
   const unionesDelMuro = uniones.filter((u) => u.muros_conectados.includes(muro.id));
 
   // 2. Determinar orientación de placa
-  // Si alto muro <= alto placa, vertical. Sino horizontal.
   const [anchoPlacaFormato, altoPlacaFormato] = muro.placa.formato_m;
   const orientacion = muro.placa.orientacion;
 
   // 3. Generar y procesar grilla de placas para cada cara y capa
-  const todasLasPlacas = [];
+  let todasLasPlacas: PlacaRect[] = [];
   const caras: ("A" | "B")[] = muro.sistema.caras === 2 ? ["A", "B"] : ["A"];
 
   const simetrico = unionesDelMuro.some((u) => u.config_modulacion.perfiles_simetricos === true);
   const unionNoOrtogonal = unionesDelMuro.find((u) => u.angulo_grados !== 90 && u.angulo_grados > 0);
   const anguloEsquina = unionNoOrtogonal ? unionNoOrtogonal.angulo_grados : undefined;
 
+  let retazosGenerados: Retazo2D[] = [];
+
   for (const cara of caras) {
     for (let capa = 1; capa <= muro.sistema.capas_por_cara; capa++) {
-      // Si es capa 2 o más, aplicamos el desfase definido en el catálogo
       const origen_x_m = capa > 1 ? -catalogo.desfase_junta_vertical_min_m : 0;
 
       const basePlacas = generarGrillaPlacas({
@@ -68,12 +69,136 @@ export function calcularMuro(
       });
 
       const placasRecortadas = aplicarAberturas(basePlacas, muro.aberturas);
-      todasLasPlacas.push(...placasRecortadas);
+      // Aplicar cortes en L para evitar juntas frías en esquinas superiores
+      const placasConCortesL = aplicarCortesL(placasRecortadas, muro.aberturas, muro.geometria.largo_m);
+      todasLasPlacas.push(...placasConCortesL);
+
+      // Extraer retazos a partir de los recortes de aberturas
+      const retCaras = extraerRetazosDeAberturas(basePlacas, muro.aberturas, muro.placa.tipo, muro.placa.espesor_mm, muro.id);
+      retazosGenerados.push(...retCaras);
     }
   }
 
   // 4. Extraer juntas
   const juntas = extraerJuntas(todasLasPlacas, muro.aberturas);
+
+  // 4B. Agregar juntas y desglosar demandas de placas de hornacinas
+  let areaPlacasNicho = 0;
+  const demandasHornacina: DemandaPlaca[] = [];
+  let hornacinaIdCounter = 1;
+
+  for (const ab of muro.aberturas) {
+    if (ab.tipo === "hornacina") {
+      const prof = ab.profundidad_m || 0.10;
+      
+      // Juntas longitudinales y de fondo
+      for (let i = 0; i < 4; i++) {
+        juntas.push({
+          orientacion: "horizontal",
+          coordenada_fija: 0,
+          inicio: 0,
+          fin: prof,
+          longitud: prof,
+          cara: "A",
+          capa: 1
+        });
+      }
+      for (let i = 0; i < 2; i++) {
+        juntas.push({
+          orientacion: "horizontal",
+          coordenada_fija: 0,
+          inicio: 0,
+          fin: ab.ancho_m,
+          longitud: ab.ancho_m,
+          cara: "A",
+          capa: 1
+        });
+        juntas.push({
+          orientacion: "vertical",
+          coordenada_fija: 0,
+          inicio: 0,
+          fin: ab.alto_m,
+          longitud: ab.alto_m,
+          cara: "A",
+          capa: 1
+        });
+      }
+
+      // Revestimiento interno (área: 2*H*D + 2*W*D + W*H)
+      areaPlacasNicho += (2 * ab.alto_m * prof) + (2 * ab.ancho_m * prof) + (ab.ancho_m * ab.alto_m);
+
+      // Desglose de piezas para nesting 2D
+      demandasHornacina.push({
+        id: `dem_nicho_fondo_${hornacinaIdCounter}`,
+        ancho_m: ab.ancho_m,
+        alto_m: ab.alto_m,
+        placa_tipo: muro.placa.tipo,
+        espesor_mm: muro.placa.espesor_mm,
+        nombre_pieza: `Fondo de Hornacina #${hornacinaIdCounter}`,
+      });
+      demandasHornacina.push({
+        id: `dem_nicho_base_${hornacinaIdCounter}`,
+        ancho_m: ab.ancho_m,
+        alto_m: prof,
+        placa_tipo: muro.placa.tipo,
+        espesor_mm: muro.placa.espesor_mm,
+        nombre_pieza: `Base Horiz Hornacina #${hornacinaIdCounter}`,
+      });
+      demandasHornacina.push({
+        id: `dem_nicho_dintel_${hornacinaIdCounter}`,
+        ancho_m: ab.ancho_m,
+        alto_m: prof,
+        placa_tipo: muro.placa.tipo,
+        espesor_mm: muro.placa.espesor_mm,
+        nombre_pieza: `Techo Horiz Hornacina #${hornacinaIdCounter}`,
+      });
+      demandasHornacina.push({
+        id: `dem_nicho_lat1_${hornacinaIdCounter}`,
+        ancho_m: ab.alto_m,
+        alto_m: prof,
+        placa_tipo: muro.placa.tipo,
+        espesor_mm: muro.placa.espesor_mm,
+        nombre_pieza: `Lateral Izq Hornacina #${hornacinaIdCounter}`,
+      });
+      demandasHornacina.push({
+        id: `dem_nicho_lat2_${hornacinaIdCounter}`,
+        ancho_m: ab.alto_m,
+        alto_m: prof,
+        placa_tipo: muro.placa.tipo,
+        espesor_mm: muro.placa.espesor_mm,
+        nombre_pieza: `Lateral Der Hornacina #${hornacinaIdCounter}`,
+      });
+
+      hornacinaIdCounter++;
+    }
+  }
+
+  // Ejecutamos la reutilización local de retazos para las hornacinas de este muro
+  const resultadoReutilizacion = optimizarReutilizacionRetazos(demandasHornacina, retazosGenerados);
+
+  // Las demandas de hornacina que NO pudieron satisfacerse con retazos consumen placa comercial nueva
+  const areaPendienteM2 = resultadoReutilizacion.demandasPendientes.reduce((acc, d) => acc + (d.ancho_m * d.alto_m), 0);
+  const placasNichoAdicionales = Math.ceil((areaPendienteM2 * 1.10) / (anchoPlacaFormato * altoPlacaFormato));
+
+  // Actualizamos la lista de retazos disponibles (restantes) de este muro
+  const retazosRestantesMuro = resultadoReutilizacion.retazosRestantes;
+
+  // Marcamos las placas que se revistieron con retazos
+  resultadoReutilizacion.demandasSatisfechas.forEach((sat) => {
+    // Para dibujarlas en el visualizador, las podemos inyectar como sub-placas del detalle
+    todasLasPlacas.push({
+      id: sat.demandaId,
+      x: 0, // Posición simbólica o no crítica para hornacina interna
+      y: 0,
+      ancho: sat.ancho_m,
+      alto: sat.alto_m,
+      cara: "A",
+      capa: 1,
+      recortada: true,
+      esRetazoReutilizado: true,
+      retazoOrigenId: sat.retazoUsadoId
+    });
+  });
 
   // 5. Cálculos de materiales
   const areaBruta = muro.geometria.largo_m * muro.geometria.alto_m;
@@ -175,15 +300,31 @@ export function calcularMuro(
   const placaConfig = catalogo.placas.find((p) => p.tipo === muro.placa.tipo);
   const pesoKgM2 = placaConfig ? placaConfig.peso_kg_m2 : 9.5;
   const areaPlacasM2 = todasLasPlacas.reduce((acc, p) => acc + p.ancho * p.alto, 0);
-  const pesoTotalKg = roundFloat(areaPlacasM2 * pesoKgM2);
+  const pesoTotalKg = roundFloat((areaPlacasM2 + areaPlacasNicho) * pesoKgM2);
   trazabilidad.push(
-    `Placas peso: ${areaPlacasM2.toFixed(2)} m2 x ${pesoKgM2} kg/m2 = ${pesoTotalKg.toFixed(2)} kg`
+    `Placas peso: (${areaPlacasM2.toFixed(2)} m2 base + ${areaPlacasNicho.toFixed(2)} m2 hornacina) x ${pesoKgM2} kg/m2 = ${pesoTotalKg.toFixed(2)} kg`
+  );
+
+  const retazosReutilizadosMuro: Retazo2D[] = resultadoReutilizacion.demandasSatisfechas.map((sat) => {
+    const retOriginal = retazosGenerados.find((rg) => rg.id === sat.retazoUsadoId);
+    return {
+      id: sat.retazoUsadoId,
+      ancho_m: sat.ancho_m,
+      alto_m: sat.alto_m,
+      placa_tipo: muro.placa.tipo,
+      espesor_mm: muro.placa.espesor_mm,
+      origen_elemento_id: retOriginal ? retOriginal.origen_elemento_id : muro.id
+    };
+  });
+
+  trazabilidad.push(
+    `Placas (Nesting 2D): Se generaron ${retazosGenerados.length} retazos a partir de recortes. Se reutilizaron ${retazosReutilizadosMuro.length} retazos para revestir la hornacina local, evitando comprar placas comerciales nuevas.`
   );
 
   return {
     muro_id: muro.id,
     placas: {
-      cantidad_total: todasLasPlacas.length,
+      cantidad_total: todasLasPlacas.filter(p => !p.esRetazoReutilizado).length + placasNichoAdicionales,
       peso_total_kg: pesoTotalKg,
       detalle: todasLasPlacas,
     },
@@ -200,5 +341,7 @@ export function calcularMuro(
     aislante,
     esquineros,
     trazabilidad,
+    retazos_generados: retazosGenerados,
+    retazos_reutilizados: retazosReutilizadosMuro,
   };
 }

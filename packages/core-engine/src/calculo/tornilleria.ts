@@ -17,7 +17,21 @@ export function calcularTornilleria(
 
   // 2. Tornillos perfil-perfil
   const tornillosPerfilUnion = catalogo.tornillos.perfil_perfil_por_union;
-  const perfilPerfil = resultadoPerfiles.montantes * 2 * tornillosPerfilUnion;
+  // Fijación estándar de montantes a rieles en extremos
+  let perfilPerfil = resultadoPerfiles.montantes * 2 * tornillosPerfilUnion;
+
+  // Adicionar fijación sismorresistente por cada empalme telescópico en montantes (8 wafer por empalme)
+  let empalmesMontantes = 0;
+  if (resultadoPerfiles.nesting_montantes) {
+    for (const barra of resultadoPerfiles.nesting_montantes.barras) {
+      for (const corte of barra.cortes) {
+        if (corte.id.includes("_b") && !corte.id.endsWith("_b1")) {
+          empalmesMontantes++;
+        }
+      }
+    }
+  }
+  perfilPerfil += empalmesMontantes * 8;
 
   // 3. Anclajes losa
   const separacionAnclajes = catalogo.tornillos.anclaje_losa_separacion_m;

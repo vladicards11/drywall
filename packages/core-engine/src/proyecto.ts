@@ -5,9 +5,14 @@ import {
   ResultadoMuro,
   ResultadoPerfiles,
   ResultadoTornillos,
-  ResultadoAmbiente
+  ResultadoAmbiente,
+  ResultadoCielorraso,
+  ResultadoCenefa,
+  Retazo2D
 } from "@drywall-calc/catalog-schemas";
 import { calcularMuro } from "./orquestador.js";
+import { calcularCielorraso } from "./calculo/cielorraso.js";
+import { calcularCenefa } from "./calculo/cenefa.js";
 import { roundUpSafe, roundFloat } from "./utils/redondeo.js";
 
 export class ProyectoInvalidoError extends Error {
@@ -54,6 +59,38 @@ export function calcularProyecto(
     murosResultados.push(resMuro);
   }
 
+  // Consolidamos la piscina global de retazos generados libres de muros
+  let piscinaGlobal: Retazo2D[] = [];
+  for (const rm of murosResultados) {
+    if (rm.retazos_generados) {
+      const usadosLocal = new Set(rm.retazos_reutilizados?.map((r) => r.id) || []);
+      const libres = rm.retazos_generados.filter((r) => !usadosLocal.has(r.id));
+      piscinaGlobal.push(...libres);
+    }
+  }
+
+  // 2B. Calcular cada cielorraso individualmente
+  const cielorrasosResultados: ResultadoCielorraso[] = [];
+  if (proyecto.cielorrasos && proyecto.cielorrasos.length > 0) {
+    for (const cie of proyecto.cielorrasos) {
+      const resCie = calcularCielorraso(cie, catalogo);
+      cielorrasosResultados.push(resCie);
+    }
+  }
+
+  // 2C. Calcular cada cenefa individualmente alimentandola con la piscina de retazos
+  const cenefasResultados: ResultadoCenefa[] = [];
+  if (proyecto.cenefas && proyecto.cenefas.length > 0) {
+    for (const cen of proyecto.cenefas) {
+      const resCen = calcularCenefa(cen, catalogo, piscinaGlobal);
+      cenefasResultados.push(resCen);
+
+      // Descontamos los retazos que la cenefa consumió
+      const usadosCen = new Set(resCen.retazos_reutilizados?.map((r: Retazo2D) => r.id) || []);
+      piscinaGlobal = piscinaGlobal.filter((r: Retazo2D) => !usadosCen.has(r.id));
+    }
+  }
+
   // 3. Consolidar totales a nivel de proyecto
   let placasTotal = 0;
   let montantesTotal = 0;
@@ -72,6 +109,18 @@ export function calcularProyecto(
 
   let placasPesoTotal = 0;
 
+  // Totales específicos de cielorrasos
+  let cieSecundariosTotal = 0;
+  let ciePrincipalesTotal = 0;
+  let ciePerimetralesTotal = 0;
+  let cieColgadoresTotal = 0;
+  let alambreMlTotal = 0;
+
+  // Totales específicos de cenefas
+  let cenSecundariosTotal = 0;
+  let cenPerimetralesTotal = 0;
+  let cenEsquinerosTotal = 0;
+
   for (const resMuro of murosResultados) {
     placasTotal += resMuro.placas.cantidad_total;
     placasPesoTotal += resMuro.placas.peso_total_kg;
@@ -88,6 +137,42 @@ export function calcularProyecto(
     masillaKgTotal += resMuro.masilla.kg_total;
     aislanteM2Total += resMuro.aislante.m2;
     esquinerosMlTotal += resMuro.esquineros.ml_total;
+  }
+
+  for (const resCie of cielorrasosResultados) {
+    placasTotal += resCie.placas.cantidad_total;
+    placasPesoTotal += resCie.placas.peso_total_kg;
+    
+    cieSecundariosTotal += resCie.perfiles.secundarios_barras;
+    ciePrincipalesTotal += resCie.perfiles.principales_barras;
+    ciePerimetralesTotal += resCie.perfiles.perimetrales_barras;
+    cieColgadoresTotal += resCie.colgadores.cantidad_total;
+    alambreMlTotal += resCie.colgadores.alambre_ml;
+
+    tornillosPlacaPerfilTotal += resCie.tornillos.placa_perfil;
+    tornillosPerfilPerfilTotal += resCie.tornillos.perfil_perfil;
+    tornillosAnclajesLosaTotal += resCie.tornillos.anclajes_losa + resCie.tornillos.anclajes_pared;
+
+    cintaMlTotal += resCie.cinta.ml_total;
+    masillaKgTotal += resCie.masilla.kg_total;
+    aislanteM2Total += resCie.aislante.m2;
+  }
+
+  for (const resCen of cenefasResultados) {
+    placasTotal += resCen.placas.cantidad_total;
+    placasPesoTotal += resCen.placas.peso_total_kg;
+
+    cenSecundariosTotal += resCen.perfiles.secundarios_barras;
+    cenPerimetralesTotal += resCen.perfiles.perimetrales_barras;
+    cenEsquinerosTotal += resCen.esquineros.ml_total;
+
+    tornillosPlacaPerfilTotal += resCen.tornillos.placa_perfil;
+    tornillosPerfilPerfilTotal += resCen.tornillos.perfil_perfil;
+    tornillosAnclajesLosaTotal += resCen.tornillos.anclajes_losa + resCen.tornillos.anclajes_pared;
+
+    cintaMlTotal += resCen.cinta.ml_total;
+    masillaKgTotal += resCen.masilla.kg_total;
+    esquinerosMlTotal += resCen.esquineros.ml_total;
   }
 
   // Las unidades comerciales del proyecto se recalculan con el total consolidado
@@ -126,6 +211,22 @@ export function calcularProyecto(
     esquineros: {
       ml_total: roundFloat(esquinerosMlTotal),
     },
+    ...(cielorrasosResultados.length > 0 ? {
+      cielorraso: {
+        secundarios: cieSecundariosTotal,
+        principales: ciePrincipalesTotal,
+        perimetrales: ciePerimetralesTotal,
+        colgadores: cieColgadoresTotal,
+        alambre_ml: roundFloat(alambreMlTotal),
+      }
+    } : {}),
+    ...(cenefasResultados.length > 0 ? {
+      cenefa: {
+        secundarios: cenSecundariosTotal,
+        perimetrales: cenPerimetralesTotal,
+        esquineros_ml: roundFloat(cenEsquinerosTotal)
+      }
+    } : {})
   };
 
   // 4. Si el proyecto tiene ambientes, calcular los desgloses por ambiente
@@ -153,9 +254,25 @@ export function calcularProyecto(
     }
   }
 
+  const todosRetazosReutilizados: Retazo2D[] = [];
+  for (const rm of murosResultados) {
+    if (rm.retazos_reutilizados) {
+      todosRetazosReutilizados.push(...rm.retazos_reutilizados);
+    }
+  }
+  for (const rc of cenefasResultados) {
+    if (rc.retazos_reutilizados) {
+      todosRetazosReutilizados.push(...rc.retazos_reutilizados);
+    }
+  }
+
   return {
     proyecto: proyecto.proyecto,
     muros: murosResultados,
+    cielorrasos: cielorrasosResultados.length > 0 ? cielorrasosResultados : undefined,
+    cenefas: cenefasResultados.length > 0 ? cenefasResultados : undefined,
+    retazos_disponibles: piscinaGlobal,
+    retazos_reutilizados: todosRetazosReutilizados,
     totales,
     ...(porAmbiente ? { por_ambiente: porAmbiente } : {}),
   };
