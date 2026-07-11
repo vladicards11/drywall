@@ -157,6 +157,9 @@ export class StructureGenerator {
       mesh.userData = { type: 'estructura' };
       group.add(mesh);
 
+      // Registrar la malla de colisión en ThatOpen para habilitar Medición, Sección y Selección interactiva
+      this.bimWorld.world.meshes.add(mesh);
+
       // Agregar líneas de bordes
       const edges = new THREE.EdgesGeometry(geo);
       const lineSegments = new THREE.LineSegments(edges, edgeMaterial);
@@ -271,6 +274,7 @@ export class StructureGenerator {
 
         plateMesh.position.set(pX, pY, pZ);
         group.add(plateMesh);
+        this.bimWorld.world.meshes.add(plateMesh); // Registrar en ThatOpen
       });
     } else {
       // Fallback monolítico horizontal en X, vertical en Z
@@ -279,11 +283,13 @@ export class StructureGenerator {
       plateA.userData = { type: 'placa' };
       plateA.position.set(largo_m / 2, (trackDepth / 2) + (plateThickness / 2), alto_m / 2);
       group.add(plateA);
+      this.bimWorld.world.meshes.add(plateA); // Registrar en ThatOpen
 
       const plateB = new THREE.Mesh(plateGeo, plateMaterial);
       plateB.userData = { type: 'placa' };
       plateB.position.set(largo_m / 2, -(trackDepth / 2) - (plateThickness / 2), alto_m / 2);
       group.add(plateB);
+      this.bimWorld.world.meshes.add(plateB); // Registrar en ThatOpen
     }
 
     // Clasificar el resto de mallas (perfilería) en el grupo
@@ -449,7 +455,7 @@ export class StructureGenerator {
       });
     }
 
-    // Clasificar las mallas en el grupo para control de visibilidad
+    // Clasificar las mallas en el grupo para control de visibilidad y registrar en colisiones
     group.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         if (child.material === plateMaterial) {
@@ -457,6 +463,7 @@ export class StructureGenerator {
         } else {
           child.userData = { type: 'estructura' };
         }
+        this.bimWorld.world.meshes.add(child); // Registrar en ThatOpen
       }
     });
 
@@ -497,15 +504,25 @@ export class StructureGenerator {
    */
   clear() {
     if (this.group) {
+      const groupMeshes = new Set<THREE.Object3D>();
+
       // Liberar memoria de geometrías y materiales
       this.group.traverse((child) => {
         if (child instanceof THREE.Mesh) {
+          groupMeshes.add(child);
           child.geometry.dispose();
           if (Array.isArray(child.material)) {
             child.material.forEach(m => m.dispose());
           } else {
             child.material.dispose();
           }
+        }
+      });
+
+      // Remover mallas de la base de colisión de ThatOpen
+      groupMeshes.forEach((mesh) => {
+        if (mesh instanceof THREE.Mesh) {
+          this.bimWorld.world.meshes.delete(mesh);
         }
       });
 
